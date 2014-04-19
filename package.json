@@ -1,6 +1,6 @@
 {
     "author": "Christian Vette",
-    "name": "FCL-Parser",
+    "name": "fcl-parser",
     "description": "A parser for the Fuzzy Control Language (FCL)",
     "version": "0.0.1",
     "license": "MIT",
