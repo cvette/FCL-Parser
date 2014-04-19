@@ -1,6 +1,6 @@
 FCL - Parser
 --------
-A parser for the Fuzzy Control Language (FCL).
+A parser for the Fuzzy Control Language (FCL) standardized by IEC 61131-7. FCL is a domain-specific programming language for fuzzy logic.
 
 ###Usage
 ```javascript
