@@ -1,10 +1,13 @@
 var fs = require("fs");
-var Parser = require("../lib/fcl_parser");
-var fcl = Parser();
+var fcl = require("../lib/fcl_parser").Parser();
 
 fs.readFile("./examples/test.fcl", "utf-8", function (err, data) {
-    if(err) return console.log(err);
+    "use strict";
 
-    var result = fcl.parse(data);
-    return console.log(result);
+    if (err) {
+        return console.log(err);
+    }
+
+    return;
+
 });
