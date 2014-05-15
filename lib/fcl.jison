@@ -13,7 +13,7 @@ RuleBlock                   = ast.RuleBlock
 OptionBlock                 = ast.OptionBlock
 LinguisticTerm              = ast.LinguisticTerm
 MembershipFunction          = ast.MembershipFunction
-Points                      = ast.Points
+Point                       = ast.Point
 Rule                        = ast.Rule
 Range                       = ast.Range
 WeightingFactor             = ast.WeightingFactor
@@ -36,7 +36,7 @@ function_block_declaration
          fb_io_var_declarations*
          other_var_declarations*
          function_block_body
-    END_FUNCTION_BLOCK -> FunctionBlock({name: $2}, [$3, $4, $5, $6, $7, $8])
+    END_FUNCTION_BLOCK -> FunctionBlock(1, 1, {name: $2}, [$3, $4, $5])
   ;
 
 fb_io_var_declarations
@@ -56,7 +56,7 @@ function_block_body
   ;
 
 fuzzify_block
-  : FUZZIFY_BLOCK ID
+  : FUZZIFY ID
          linguistic_term*
     END_FUZZIFY -> FuzzifyBlock({variable: $2}, [$4])
   ;
@@ -70,14 +70,23 @@ defuzzify_block
     END_DEFUZZIFY -> DefuzzifyBlock({variable: $2}, [$3, $4, $5, $6])
   ;
 
+defuzzification_method
+  : METHOD COLON (CoG | CoGS | CoA | LM | RM) SEMICOLON
+  ;
+
+default_value
+  : DEFAULT ASSIGNMENT (numeric_literal | NC) SEMICOLON
+  ;
+
 rule_block
-  : RULEBLOCK rule_block_name
+  : RULEBLOCK ID
         operator_definition
         activation_method?
         accumulation_method
         rule*
     END_RULEBLOCK -> RuleBlock({name: $2}, [$3, $4, $5, $6])
   ;
+
 
 option_block
   : OPTION
@@ -86,7 +95,7 @@ option_block
   ;
 
 linguistic_term
-  : TERM ID ASSIGNMENT membership_function SEMICOLON -> LinguisticTerm({name: $2}. [$4])
+  : TERM ID ASSIGNMENT membership_function SEMICOLON -> LinguisticTerm({name: $2}, [$4])
   ;
 
 membership_function
@@ -99,11 +108,23 @@ singleton
   ;
 
 points
-  : (LPARA (numeric_literal | ID) COMMA numeric_literal RPARA)* -> Points({}, )
+  : point* -> $1
+  ;
+
+point
+  : (LPARA (numeric_literal | ID) COMMA numeric_literal RPARA) -> Point()
   ;
 
 defuzzification_method
-  : METHOD COLON (CoG | CoGS | CoA | LM | RM) SEMICOLON
+  : METHOD COLON defuzzifcation_method_option SEMICOLON -> DefuzzificationMethod()
+  ;
+
+defuzzification_method_option
+  : CoG
+  | CoGS
+  | CoA
+  | LM
+  | RM
   ;
 
 default_value
@@ -116,11 +137,11 @@ range
 
 operator_definition
   : (OR COLON (MAX | ASUM | BSUM))?
-    (AND COLON (MIN | PROD | BDIF))? SEMICOLON -> OperatorDefinition({operator: yytext}, [])
+    (AND COLON (MIN | PROD | BDIF))? SEMICOLON -> OperatorDefinition({}, [])
   ;
 
 activation_method
-  : ACT COLON (PROD | MIN) SEMICOLON -> ActivationMethod({name: yytex}, [])
+  : ACT COLON (PROD | MIN) SEMICOLON -> ActivationMethod({}, [])
   ;
 
 accumulation_method
@@ -130,20 +151,20 @@ accumulation_method
 rule
   : RULE integer_literal COLON
     IF condition THEN conclusion (WITH weighting_factor)? SEMICOLON
-        { $$ = Rule({number: $2}, [$condition, $conclusion, $weighting_factor])}
+        { $$ = Rule({number: $2}, [$condition, $conclusion, $5])}
   ;
 
 condition
-  : x(( AND x | OR x ))*
+  : x((AND x | OR x))*
   ;
 
 x
-  : (NOT)? ((subcondtion) | (LPARA condition RPARA))
+  : (NOT)? ((subcondition) | (LPARA condition RPARA))
   ;
 
 subcondition
   : ID IS (NOT)? ID
-  | ID
+  | ID -> $1
   ;
 
 conclusion
@@ -171,7 +192,7 @@ numeric_literal
 
 signed_integer
   : (PLUS | DASH) integer
-  | integer
+  | integer -> $1
   ;
 
 integer_literal
@@ -385,7 +406,7 @@ enumerated_specification
 
 enumerated_value
   : ID HASH ID
-  | ID
+  | ID -> $1
   ;
 
 array_specification
@@ -434,7 +455,7 @@ variable
   ;
 
 symbolic_variable
-  : ID
+  : ID -> $1
   | multi_element_variable
   ;
 
@@ -488,10 +509,14 @@ name_list
   : ID (COMMA ID)*
   ;
 
+output_declaration
+  : name_list COLON var_init_decl
+  ;
+
 output_declarations
   : VAR_OUTPUT (RETAIN | NON_RETAIN)?
-      var_init_decl SEMICOLON
-      (var_init_decl SEMICOLON)*
+      output_declaration SEMICOLON
+      (output_declaration SEMICOLON)*
     END_VAR
   ;
 

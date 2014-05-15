@@ -5,9 +5,9 @@ DIGIT = [0-9]
 IDENTIFIER = ([a-zA-Z] | (\_([a-zA-Z] | [0-9]))) ((\_)? ([a-zA-Z] | [0-9]))*
 SINGLE_BYTE_STRING = \'[.^\']|"$\'"\'
 DOUBLE_BYTE_STRING = \"[.^\']|"$\""\"
-BINARY_INTEGER = 2#\s*[0-1]\s*(\_?[0-1])*
-OCTAL_INTEGER = 8#\s*[0-7]\s*(\_?[0-7])*
-HEX_INTEGER = 16#\s*[0-9A-F]\s*(\_?[0-9A-F])*
+BINARY_INTEGER = "2#"\s*[0-1]\s*(\_?[0-1])*
+OCTAL_INTEGER = "8#"\s*[0-7]\s*(\_?[0-7])*
+HEX_INTEGER = "16#"\s*[0-9A-F]\s*(\_?[0-9A-F])*
 REAL = (\+|\-)?[0-9](\_?[0-9])*\.[0-9](\_?[0-9])*
 DIRECT_VAR_PREFIX = %\s*[IQM]{1}\s+("NIL"|[WDLXB]){1}
 DURATION_PREFIX = ("T"|"TIME")\s*#\s*\-?
@@ -51,12 +51,12 @@ DINT                return 'DINT'
 DWORD               return 'DWORD'
 END_DEFUZZIFY       return 'END_DEFUZZIFY'
 END_FUNCTION_BLOCK  return 'END_FUNCTION_BLOCK'
-END_FUZZIFY         return 'END_FUZZIFY
+END_FUZZIFY         return 'END_FUZZIFY'
 END_OPTIONS         return 'END_OPTIONS'
 END_RULEBLOCK       return 'END_RULEBLOCK'
 END_VAR             return 'END_VAR'
 END_TYPE            return 'END_TYPE'
-FUNCTION_BLOCCK     return 'FUNCTION_BLOCK'
+FUNCTION_BLOCK      return 'FUNCTION_BLOCK'
 FUZZIFY             return 'FUZZIFY'
 IF                  return 'IF'
 INT                 return 'INT'
@@ -97,7 +97,7 @@ VAR_IN_OUT          return 'VAR_IN_OUT'
 VAR                 return 'VAR'
 WORD                return 'WORD'
 WITH                return 'WITH'
-WSTRING             retunr 'WSTRING'
+WSTRING             return 'WSTRING'
 STRUCT              return 'STRUCT'
 STRING              return 'STRING'
 SINT                return 'SINT'

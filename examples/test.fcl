@@ -10,7 +10,7 @@ VAR_OUTPUT
 END_VAR
 
 FUZZIFY service
-    TERM poor := (0, 1) (4, 0) ;
+    TERM poor := (0, 1) (4, 0);
     TERM good := (1, 0) (4,1) (6,1) (9,0);
     TERM excellent := (6, 0) (9, 1);
 END_FUZZIFY

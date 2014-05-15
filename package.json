@@ -13,9 +13,6 @@
     },
     "main": "./lib/fcl",
     "keywords": ["FCL", "Fuzzy Logic", "Fuzzy Control Language", "Parser"],
-    "optionalDependencies": {
-        "jison": ">=0.4.4"
-    },
     "engines": {
         "node": "*"
     }
