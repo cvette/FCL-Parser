@@ -4,6 +4,12 @@
 var ast = require('./lib/fcl_ast'),
 
 Library                     = ast.Library
+InputDeclarations           = ast.InputDeclarations
+InputDeclaration            = ast.InputDeclaration
+OutputDeclarations          = ast.OutputDeclarations
+OutputDeclaration           = ast.OutputDeclaration
+VarDeclarations             = ast.VarDeclarations
+InputOutputDeclarations     = ast.InputOutputDeclarations
 DataType                    = ast.DataType
 FunctionBlock               = ast.FunctionBlock
 FunctionBlockBody           = ast.FunctionBlockBody
@@ -20,6 +26,10 @@ WeightingFactor             = ast.WeightingFactor
 OperatorDefinition          = ast.OperatorDefinition
 ActivationMethod            = ast.ActivationMethod
 AccumulationMethod          = ast.AccumulationMethod
+DefuzzificationMethod       = ast.DefuzzificationMethod
+DefaultValue                = ast.DefaultValue
+Condition                   = ast.Condition
+Conclusion                  = ast.Conclusion
 
 %}
 
@@ -29,14 +39,14 @@ AccumulationMethod          = ast.AccumulationMethod
 
 library
   : data_type_declaration* function_block_declaration* EOF
-       { return Library({}, [$1, $2]) }
+       { return new Library(@1.first_line, @1.first_column, {}, [$1, $2]) }
   ;
 function_block_declaration
   : FUNCTION_BLOCK ID
          fb_io_var_declarations*
          other_var_declarations*
          function_block_body
-    END_FUNCTION_BLOCK -> FunctionBlock(1, 1, {name: $2}, [$3, $4, $5])
+    END_FUNCTION_BLOCK -> new FunctionBlock(@1.first_line, @1.first_column, {name: $2}, [$3, $4, $5])
   ;
 
 fb_io_var_declarations
@@ -52,13 +62,13 @@ function_block_body
   : fuzzify_block*
     defuzzify_block*
     rule_block*
-    option_block* -> FunctionBlockBody({}, [$1, $2, $3, $4])
+    option_block* -> new FunctionBlockBody(@1.first_line, @1.first_column, {}, [$1, $2, $3, $4])
   ;
 
 fuzzify_block
   : FUZZIFY ID
          linguistic_term*
-    END_FUZZIFY -> FuzzifyBlock({variable: $2}, [$4])
+    END_FUZZIFY -> new FuzzifyBlock(@2.first_line, @2.first_column, {variable: $2}, [$3])
   ;
 
 defuzzify_block
@@ -67,15 +77,15 @@ defuzzify_block
          linguistic_term*
          defuzzification_method
          default_value
-    END_DEFUZZIFY -> DefuzzifyBlock({variable: $2}, [$3, $4, $5, $6])
+    END_DEFUZZIFY -> new DefuzzifyBlock(@1.first_line, @1.first_column, {variable: $2}, [$3, $4, $5, $6])
   ;
 
 defuzzification_method
-  : METHOD COLON (CoG | CoGS | CoA | LM | RM) SEMICOLON
+  : METHOD COLON (CoG | CoGS | CoA | LM | RM) SEMICOLON -> new DefuzzificationMethod(@1.first_line, @1.first_column, {method: $3}, [])
   ;
 
 default_value
-  : DEFAULT ASSIGNMENT (numeric_literal | NC) SEMICOLON
+  : DEFAULT ASSIGNMENT (numeric_literal | NC) SEMICOLON -> new DefaultValue(@1.first_line, @1.first_column, {value: $3}, [])
   ;
 
 rule_block
@@ -84,22 +94,22 @@ rule_block
         activation_method?
         accumulation_method
         rule*
-    END_RULEBLOCK -> RuleBlock({name: $2}, [$3, $4, $5, $6])
+    END_RULEBLOCK -> new RuleBlock(@1.first_line, @1.first_column, {id: $2}, [$3, $4, $5, $6])
   ;
 
 
 option_block
   : OPTION
       /* any manufacturer specific parameters */
-    END_OPTION -> OptionBlock({}, [])
+    END_OPTION -> new OptionBlock(@$1.first_line, @$1.first_column, {}, [])
   ;
 
 linguistic_term
-  : TERM ID ASSIGNMENT membership_function SEMICOLON -> LinguisticTerm({name: $2}, [$4])
+  : TERM ID ASSIGNMENT membership_function SEMICOLON -> new LinguisticTerm(@1.first_line, @1.first_column, {name: $2}, [$4])
   ;
 
 membership_function
-  : (singleton | points) -> MembershipFunction({}, [$1])
+  : (singleton | points) -> new MembershipFunction(@1.first_line, @1.first_column, {}, [$1])
   ;
 
 singleton
@@ -112,50 +122,46 @@ points
   ;
 
 point
-  : (LPARA (numeric_literal | ID) COMMA numeric_literal RPARA) -> Point()
+  : (LPARA (numeric_literal | ID) COMMA numeric_literal RPARA) -> new Point(@2.first_line, @2.first_column, {}, [])
   ;
 
 defuzzification_method
-  : METHOD COLON defuzzifcation_method_option SEMICOLON -> DefuzzificationMethod()
+  : METHOD COLON defuzzifcation_method_option SEMICOLON -> new DefuzzificationMethod(@1.first_line, @1.first_column, {}, [])
   ;
 
 defuzzification_method_option
-  : CoG
-  | CoGS
-  | CoA
-  | LM
-  | RM
-  ;
-
-default_value
-  : DEFAULT ASSIGNMENT numeric_literal | NC SEMICOLON
+  : CoG -> yytext
+  | CoGS -> yytext
+  | CoA -> yytext
+  | LM -> yytext
+  | RM -> yytext
   ;
 
 range
-  : RANGE LPARA numeric_literal RANGEDOT numeric_literal RPARA SEMICOLON -> Range({}, [$3, $5])
+  : RANGE LPARA numeric_literal RANGEDOT numeric_literal RPARA SEMICOLON -> new Range(@3.first_line, @3.first_column, {}, [$3, $5])
   ;
 
 operator_definition
   : (OR COLON (MAX | ASUM | BSUM))?
-    (AND COLON (MIN | PROD | BDIF))? SEMICOLON -> OperatorDefinition({}, [])
+    (AND COLON (MIN | PROD | BDIF))? SEMICOLON -> new OperatorDefinition(@1.first_line, @1.first_column, {}, [])
   ;
 
 activation_method
-  : ACT COLON (PROD | MIN) SEMICOLON -> ActivationMethod({}, [])
+  : ACT COLON (PROD | MIN) SEMICOLON -> new ActivationMethod(@1.first_line, @1.first_column, {}, [])
   ;
 
 accumulation_method
-  : ACCU COLON (MAX | BSUM | NSUM) SEMICOLON -> AccumulationMethod({name: yytext}, [])
+  : ACCU COLON (MAX | BSUM | NSUM) SEMICOLON -> new AccumulationMethod(@4.first_line, @4.first_column, {name: yytext}, [])
   ;
 
 rule
   : RULE integer_literal COLON
     IF condition THEN conclusion (WITH weighting_factor)? SEMICOLON
-        { $$ = Rule({number: $2}, [$condition, $conclusion, $5])}
+        { $$ = new Rule(@1.first_line, @1.first_column, {number: $2}, [$condition, $conclusion, $5])}
   ;
 
 condition
-  : x((AND x | OR x))*
+  : x((AND x | OR x))* -> new Condition(@1.first_line, @1.first_column, {}, [])
   ;
 
 x
@@ -168,11 +174,11 @@ subcondition
   ;
 
 conclusion
-  : ID (IS ID) (COMMA ID (IS ID)?)*
+  : ID (IS ID) (COMMA ID (IS ID)?)* -> new Conclusion(@1.first_line, @1.first_column, {}, [])
   ;
 
 weighting_factor
-  : (variable | numeric_literal) -> WeightingFactor({}, [$1])
+  : (variable | numeric_literal) -> new WeightingFactor(@1.first_line, @1.first_column, {}, [$1])
   ;
 
 /* according to IEC 61131-3 */
@@ -231,8 +237,8 @@ boolean_literal
 
 
 character_string
-  : SINGLE_BYTE_STRING
-  | DOUBLE_BYTE_STRING
+  : SINGLE_BYTE_STRING -> new CharacterString(@1.first_line, @1.first_column, {string: yytext}, [])
+  | DOUBLE_BYTE_STRING -> new CharacterString(@1.first_line, @1.first_column, {string: yytext}, [])
   ;
 
 /* TIME LITERALS */
@@ -486,11 +492,11 @@ input_declarations
   : VAR_INPUT (RETAIN | NON_RETAIN)?
          input_declaration SEMICOLON
          (input_declaration SEMICOLON)*
-    END_VAR
+    END_VAR -> new InputDeclarations(@1.first_line, @1.first_column, {}, [])
   ;
 
 input_declaration
-  : name_list COLON (edge_declaration | var_init_decl)
+  : name_list COLON (edge_declaration | var_init_decl) -> new InputDeclaration(@1.first_line, @1.first_column, {}, [])
   ;
 
 edge_declaration
@@ -510,21 +516,21 @@ name_list
   ;
 
 output_declaration
-  : name_list COLON var_init_decl
+  : name_list COLON var_init_decl -> new OutputDeclaration(@1.first_line, @1.first_column, {}, [])
   ;
 
 output_declarations
   : VAR_OUTPUT (RETAIN | NON_RETAIN)?
       output_declaration SEMICOLON
       (output_declaration SEMICOLON)*
-    END_VAR
+    END_VAR -> new OutputDeclarations(@1.first_line, @1.first_column, {}, [])
   ;
 
 input_output_declarations
   : VAR_IN_OUT
       var_declaration SEMICOLON
       (var_declaration SEMICOLON)*
-    END_VAR
+    END_VAR -> new InputOutputDeclarations(@1.first_line, @1.first_column, {}, [])
   ;
 
 var_decl
@@ -543,7 +549,7 @@ var_declarations
   : VAR (CONSTANT)?
       var_init_decl SEMICOLON
       (var_init_decl SEMICOLON)*
-    END_VAR
+    END_VAR -> new VarDeclarations(@1.first_line, @1.first_column, {}, [])
   ;
 
 
