@@ -29,7 +29,10 @@ AccumulationMethod          = ast.AccumulationMethod
 DefuzzificationMethod       = ast.DefuzzificationMethod
 DefaultValue                = ast.DefaultValue
 Condition                   = ast.Condition
+Conjunction                 = ast.Conjunction
+Disjunction                 = ast.Disjunction
 Conclusion                  = ast.Conclusion
+X                           = ast.X
 
 %}
 
@@ -81,7 +84,7 @@ defuzzify_block
   ;
 
 defuzzification_method
-  : METHOD COLON (CoG | CoGS | CoA | LM | RM) SEMICOLON -> new DefuzzificationMethod(@1.first_line, @1.first_column, {method: $3}, [])
+  : METHOD COLON (CoG | CoGS | CoA | LM | RM) SEMICOLON -> new DefuzzificationMethod(@1.first_line, @1.first_column, {name: $3}, [])
   ;
 
 default_value
@@ -126,7 +129,7 @@ point
   ;
 
 defuzzification_method
-  : METHOD COLON defuzzifcation_method_option SEMICOLON -> new DefuzzificationMethod(@1.first_line, @1.first_column, {}, [])
+  : METHOD COLON defuzzifcation_method_option SEMICOLON -> new DefuzzificationMethod(@1.first_line, @1.first_column, {}, [$3])
   ;
 
 defuzzification_method_option
@@ -147,11 +150,11 @@ operator_definition
   ;
 
 activation_method
-  : ACT COLON (PROD | MIN) SEMICOLON -> new ActivationMethod(@1.first_line, @1.first_column, {}, [])
+  : ACT COLON (PROD | MIN) SEMICOLON -> new ActivationMethod(@1.first_line, @1.first_column, {name: $3}, [])
   ;
 
 accumulation_method
-  : ACCU COLON (MAX | BSUM | NSUM) SEMICOLON -> new AccumulationMethod(@4.first_line, @4.first_column, {name: yytext}, [])
+  : ACCU COLON (MAX | BSUM | NSUM) SEMICOLON -> new AccumulationMethod(@4.first_line, @4.first_column, {name: $3}, [])
   ;
 
 rule
@@ -161,11 +164,16 @@ rule
   ;
 
 condition
-  : x((AND x | OR x))* -> new Condition(@1.first_line, @1.first_column, {}, [])
+  : x condition_concat* -> new Condition(@1.first_line, @1.first_column, {}, [$1, $2])
+  ;
+
+condition_concat
+  : AND x ->  new Conjunction(@1.first_line, @1.first_column, {}, [$2])
+  | OR x -> new Disjunction(@1.first_line, @1.first_column, {}, [$2])
   ;
 
 x
-  : (NOT)? ((subcondition) | (LPARA condition RPARA))
+  : (NOT)? ((subcondition) | (LPARA condition RPARA)) -> new X(@1.first_line, @1.first_column, {negation: ($1===undefined)?false:true}, [$2])
   ;
 
 subcondition
@@ -184,11 +192,11 @@ weighting_factor
 /* according to IEC 61131-3 */
 
 constant
-  : numeric_literal
-  | character_string
+  : numeric_literal -> $1
+  | character_string -> $1
   | time_literal
-  | bit_string_literal
-  | boolean_literal
+  | bit_string_literal -> $1
+  | boolean_literal -> $1
   ;
 
 numeric_literal
@@ -197,17 +205,24 @@ numeric_literal
   ;
 
 signed_integer
-  : (PLUS | DASH) integer
+  : (PLUS | DASH) integer -> ($1==='-')? ($2 * -1):$2
   | integer -> $1
   ;
 
 integer_literal
-  : integer_type_name HASH ( signed_integer | BINARY_INTEGER | OCTAL_INTEGER | HEX_INTEGER)
-  | ( signed_integer | BINARY_INTEGER | OCTAL_INTEGER | HEX_INTEGER)
+  : integer_type_name HASH integer_value -> $1
+  | integer_value -> $1
+  ;
+
+integer_value
+  : signed_integer -> $1
+  | BINARY_INTEGER -> new Number(yytext.substr(2).replace('_', ''))
+  | OCTAL_INTEGER -> new Number(yytext.substr(2).replace('_', ''))
+  | HEX_INTEGER -> new Number(yytext.substr(3).replace('_', ''))
   ;
 
 integer
-  : DIGIT ((LDASH)? DIGIT)*
+  : DIGIT ((LDASH)? DIGIT)* -> new Number(yytext.replace('_', ''))
   ;
 
 real_literal
@@ -220,7 +235,14 @@ exponent
   ;
 
 bit_string_literal
-  : bit_string_type_name HASH (integer | BINARY_INTEGER | OCTAL_INTEGER | HEX_INTEGER)
+  : bit_string_type_name HASH bit_string_value
+  ;
+
+bit_string_value
+  : integer -> $1
+  | BINARY_INTEGER -> new Number(yytext.substr(2).replace('_', ''))
+  | OCTAL_INTEGER -> new Number(yytext.substr(2).replace('_', ''))
+  | HEX_INTEGER -> new Number(yytext.substr(3).replace('_', ''))
   ;
 
 bit_string_type_name
@@ -231,8 +253,8 @@ bit_string_type_name
   ;
 
 boolean_literal
-  : TRUE
-  | FALSE
+  : TRUE -> true
+  | FALSE -> false
   ;
 
 
@@ -504,7 +526,7 @@ edge_declaration
   ;
 
 var_init_decl
-  : (spec_init | fb_name_decl)
+  : (spec_init | fb_name_decl) -> $1
   ;
 
 fb_name_decl
@@ -512,7 +534,11 @@ fb_name_decl
   ;
 
 name_list
-  : ID (COMMA ID)*
+  : ID name_list_concat*
+  ;
+
+name_list_concat
+  : COMMA ID -> $2
   ;
 
 output_declaration
