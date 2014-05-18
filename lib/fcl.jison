@@ -33,6 +33,9 @@ Conjunction                 = ast.Conjunction
 Disjunction                 = ast.Disjunction
 Conclusion                  = ast.Conclusion
 X                           = ast.X
+DataTypeDeclarations        = ast.DataTypeDeclarations
+DataTypeDeclaration         = ast.DataTypeDeclaration
+EdgeDeclaration             = ast.EdgeDeclaration
 
 %}
 
@@ -41,15 +44,15 @@ X                           = ast.X
 %%
 
 library
-  : data_type_declaration* function_block_declaration* EOF
-       { return new Library(@1.first_line, @1.first_column, {}, [$1, $2]) }
+  : data_type_declarations* function_block_declaration* EOF
+       { return new Library(@1.first_line, @1.first_column, {}, $1.concat($2)) }
   ;
 function_block_declaration
   : FUNCTION_BLOCK ID
          fb_io_var_declarations*
          other_var_declarations*
          function_block_body
-    END_FUNCTION_BLOCK -> new FunctionBlock(@1.first_line, @1.first_column, {name: $2}, [$3, $4, $5])
+    END_FUNCTION_BLOCK -> new FunctionBlock(@1.first_line, @1.first_column, {name: $2}, $3.concat($4).concat($5))
   ;
 
 fb_io_var_declarations
@@ -125,7 +128,7 @@ points
   ;
 
 point
-  : (LPARA (numeric_literal | ID) COMMA numeric_literal RPARA) -> new Point(@2.first_line, @2.first_column, {}, [])
+  : LPARA (numeric_literal | ID) COMMA numeric_literal RPARA -> new Point(@2.first_line, @2.first_column, {}, [$2, $4])
   ;
 
 defuzzification_method
@@ -145,8 +148,16 @@ range
   ;
 
 operator_definition
-  : (OR COLON (MAX | ASUM | BSUM))?
-    (AND COLON (MIN | PROD | BDIF))? SEMICOLON -> new OperatorDefinition(@1.first_line, @1.first_column, {}, [])
+  : (OR COLON or_operator_value)?
+    (AND COLON and_operator_value)? SEMICOLON -> new OperatorDefinition(@1.first_line, @1.first_column, {orMethod: $1, andMethod: $2}, [])
+  ;
+
+or_operator_value
+  : (MAX | ASUM | BSUM) -> $1
+  ;
+
+and_operator_value
+  : (MIN | PROD | BDIF) -> $1
   ;
 
 activation_method
@@ -332,83 +343,83 @@ date_and_time
 /* ELEMENTARY DATA TYPES */
 
 elementary_type_name
-  : numeric_type_name
-  | date_type_name
-  | bit_identifier
+  : numeric_type_name -> $1
+  | date_type_name -> $1
+  | bit_identifier -> $1
   | (STRING|WSTRING) (LBRACKET integer RBRACKET)? (ASSIGNMENT character_string)?
-  | TIME
+  | TIME -> $1
   ;
 
 numeric_type_name
-  : integer_type_name
-  | real_type_name
+  : integer_type_name -> $1
+  | real_type_name -> $1
   ;
 
 integer_type_name
-  : signed_integer_type_name
-  | unsigned_integer_type_name
+  : signed_integer_type_name  -> $1
+  | unsigned_integer_type_name -> $1
   ;
 
 signed_integer_type_name
-  : SINT
-  | INT
-  | DINT
-  | LINT
+  : SINT -> $1
+  | INT -> $1
+  | DINT -> $1
+  | LINT -> $1
   ;
 
 unsigned_integer_type_name
-  : USINT
-  | UINT
-  | UDINT
-  | ULINT
+  : USINT -> $1
+  | UINT -> $1
+  | UDINT -> $1
+  | ULINT -> $1
   ;
 
 real_type_name
-  : REAL
-  | LREAL
+  : REAL -> $1
+  | LREAL -> $1
   ;
 
 date_type_name
-  : DATE
-  | TIME_OF_DAY
-  | TOD
-  | DATE_AND_TIME
-  | DT
+  : DATE -> $1
+  | TIME_OF_DAY -> $1
+  | TOD -> $1
+  | DATE_AND_TIME -> $1
+  | DT -> $1
   ;
 
 bit_identifier
-  : BOOL
-  | BYTE
-  | WORD
-  | DWORD
-  | LWORD
+  : BOOL -> $1
+  | BYTE -> $1
+  | WORD -> $1
+  | DWORD -> $1
+  | LWORD -> $1
   ;
 
 /* GENERIC DATA TYPES */
 
 generic_type_name
-  : ANY_DERIVED
-  | ANY_ELEMENTARY
-  | ANY_MAGNITUDE
-  | ANY_NUM
-  | ANY_REAL
-  | ANY_INT
-  | ANY_BIT
-  | ANY_STRING
-  | ANY_DATE
-  | ANY
+  : ANY_DERIVED -> $1
+  | ANY_ELEMENTARY -> $1
+  | ANY_MAGNITUDE -> $1
+  | ANY_NUM -> $1
+  | ANY_REAL -> $1
+  | ANY_INT -> $1
+  | ANY_BIT -> $1
+  | ANY_STRING -> $1
+  | ANY_DATE -> $1
+  | ANY -> $1
   ;
 
 /* DERIVED DATA TYPES */
 
-data_type_declaration
+data_type_declarations
   : TYPE type_declaration SEMICOLON
       (type_declaration SEMICOLON)*
-    END_TYPE
+    END_TYPE -> new DataTypeDeclarations(@1.first_line, @1.first_column, {}, [$3.concat($2)])
   ;
 
-type_declaration
-  : ID COLON (spec_init | structure_declaration )
+data_type_declaration
+  : ID COLON (spec_init | structure_declaration ) -> new DataTypeDeclaration(@1.first_line, @1.first_column, {name: $1}, [$3])
   ;
 
 
@@ -425,7 +436,7 @@ subrange_specification
   ;
 
 subrange
-  : signed_integer RANGEDOT signed_integer
+  : signed_integer RANGEDOT signed_integer -> new Range()
   ;
 
 enumerated_specification
@@ -514,15 +525,15 @@ input_declarations
   : VAR_INPUT (RETAIN | NON_RETAIN)?
          input_declaration SEMICOLON
          (input_declaration SEMICOLON)*
-    END_VAR -> new InputDeclarations(@1.first_line, @1.first_column, {}, [])
+    END_VAR -> new InputDeclarations(@1.first_line, @1.first_column, {}, $5.concat($3))
   ;
 
 input_declaration
-  : name_list COLON (edge_declaration | var_init_decl) -> new InputDeclaration(@1.first_line, @1.first_column, {}, [])
+  : name_list COLON (edge_declaration | var_init_decl) -> new InputDeclaration(@1.first_line, @1.first_column, {names: $1}, [$3])
   ;
 
 edge_declaration
-  : BOOL (R_EDGE | F_EDGE)
+  : BOOL (R_EDGE | F_EDGE) -> new EdgeDeclaration(@1.first_line, @1.first_column, {}, [])
   ;
 
 var_init_decl
@@ -534,7 +545,7 @@ fb_name_decl
   ;
 
 name_list
-  : ID name_list_concat*
+  : ID name_list_concat* -> $2.concat($1)
   ;
 
 name_list_concat
@@ -542,21 +553,21 @@ name_list_concat
   ;
 
 output_declaration
-  : name_list COLON var_init_decl -> new OutputDeclaration(@1.first_line, @1.first_column, {}, [])
+  : name_list COLON var_init_decl -> new OutputDeclaration(@1.first_line, @1.first_column, {}, [$1, $3])
   ;
 
 output_declarations
   : VAR_OUTPUT (RETAIN | NON_RETAIN)?
       output_declaration SEMICOLON
       (output_declaration SEMICOLON)*
-    END_VAR -> new OutputDeclarations(@1.first_line, @1.first_column, {}, [])
+    END_VAR -> new OutputDeclarations(@1.first_line, @1.first_column, {}, [$5.concat($3)])
   ;
 
 input_output_declarations
   : VAR_IN_OUT
       var_declaration SEMICOLON
       (var_declaration SEMICOLON)*
-    END_VAR -> new InputOutputDeclarations(@1.first_line, @1.first_column, {}, [])
+    END_VAR -> new InputOutputDeclarations(@1.first_line, @1.first_column, {}, [$3.concat($2)])
   ;
 
 var_decl
@@ -575,8 +586,7 @@ var_declarations
   : VAR (CONSTANT)?
       var_init_decl SEMICOLON
       (var_init_decl SEMICOLON)*
-    END_VAR -> new VarDeclarations(@1.first_line, @1.first_column, {}, [])
+    END_VAR -> new VarDeclarations(@1.first_line, @1.first_column, {constant:(constant!==undefined)?true:false}, [$5.concat($3)])
   ;
-
 
 %%

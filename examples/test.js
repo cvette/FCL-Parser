@@ -8,6 +8,13 @@ fs.readFile("./examples/test.fcl", "utf8", function (err, data) {
         return console.log(err);
     }
 
-    return fcl.parse(data);
+    var res = fcl.parse(data);
+    var json = res.toJSON();
+
+    fs.writeFile("test.json", JSON.stringify(json), function (err) {
+
+    });
+
+    return res;
 
 });
