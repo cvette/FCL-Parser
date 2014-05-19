@@ -11,7 +11,7 @@ fs.readFile("./examples/test.fcl", "utf8", function (err, data) {
     var res = fcl.parse(data);
     var json = res.toJSON();
 
-    fs.writeFile("test.json", JSON.stringify(json), function (err) {
+    fs.writeFile("test.json", JSON.stringify(json, undefined, 2), function (err) {
 
     });
 

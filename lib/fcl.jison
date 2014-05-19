@@ -68,7 +68,7 @@ function_block_body
   : fuzzify_block*
     defuzzify_block*
     rule_block*
-    option_block* -> new FunctionBlockBody(@1.first_line, @1.first_column, {}, [$1, $2, $3, $4])
+    option_block* -> new FunctionBlockBody(@1.first_line, @1.first_column, {}, $1.concat($2).concat($3).concat($4))
   ;
 
 fuzzify_block
@@ -100,7 +100,7 @@ rule_block
         activation_method?
         accumulation_method
         rule*
-    END_RULEBLOCK -> new RuleBlock(@1.first_line, @1.first_column, {id: $2}, [$3, $4, $5, $6])
+    END_RULEBLOCK -> new RuleBlock(@1.first_line, @1.first_column, {id: $2}, [].concat($3).concat($4).concat($5).concat($6))
   ;
 
 
@@ -115,7 +115,7 @@ linguistic_term
   ;
 
 membership_function
-  : (singleton | points) -> new MembershipFunction(@1.first_line, @1.first_column, {}, [$1])
+  : (singleton | points) -> new MembershipFunction(@1.first_line, @1.first_column, {}, [].concat($1))
   ;
 
 singleton
@@ -124,11 +124,11 @@ singleton
   ;
 
 points
-  : point* -> $1
+  : point* -> [].concat($1)
   ;
 
 point
-  : LPARA (numeric_literal | ID) COMMA numeric_literal RPARA -> new Point(@2.first_line, @2.first_column, {}, [$2, $4])
+  : LPARA (numeric_literal | ID) COMMA numeric_literal RPARA -> new Point(@2.first_line, @2.first_column, {x: $2, y: $4}, [])
   ;
 
 defuzzification_method
@@ -144,20 +144,20 @@ defuzzification_method_option
   ;
 
 range
-  : RANGE LPARA numeric_literal RANGEDOT numeric_literal RPARA SEMICOLON -> new Range(@3.first_line, @3.first_column, {}, [$3, $5])
+  : RANGE LPARA numeric_literal RANGEDOT numeric_literal RPARA SEMICOLON -> new Range(@3.first_line, @3.first_column, {start: $3, end: $5})
   ;
 
 operator_definition
-  : (OR COLON or_operator_value)?
-    (AND COLON and_operator_value)? SEMICOLON -> new OperatorDefinition(@1.first_line, @1.first_column, {orMethod: $1, andMethod: $2}, [])
+  : operator_definition_disjunction?
+    operator_definition_conjunction? SEMICOLON -> new OperatorDefinition(@1.first_line, @1.first_column, {orMethod: $1, andMethod: $2}, [])
   ;
 
-or_operator_value
-  : (MAX | ASUM | BSUM) -> $1
+operator_definition_disjunction
+  : OR COLON (MAX | ASUM | BSUM) -> $3
   ;
 
-and_operator_value
-  : (MIN | PROD | BDIF) -> $1
+operator_definition_conjunction
+  : AND COLON (MIN | PROD | BDIF) -> $3
   ;
 
 activation_method
@@ -197,7 +197,7 @@ conclusion
   ;
 
 weighting_factor
-  : (variable | numeric_literal) -> new WeightingFactor(@1.first_line, @1.first_column, {}, [$1])
+  : (variable | numeric_literal) -> new WeightingFactor(@1.first_line, @1.first_column, {}, $1])
   ;
 
 /* according to IEC 61131-3 */
@@ -529,7 +529,7 @@ input_declarations
   ;
 
 input_declaration
-  : name_list COLON (edge_declaration | var_init_decl) -> new InputDeclaration(@1.first_line, @1.first_column, {names: $1}, [$3])
+  : name_list COLON (edge_declaration | var_init_decl) -> new InputDeclaration(@1.first_line, @1.first_column, {names: $1}, [].concat($3))
   ;
 
 edge_declaration
@@ -553,21 +553,21 @@ name_list_concat
   ;
 
 output_declaration
-  : name_list COLON var_init_decl -> new OutputDeclaration(@1.first_line, @1.first_column, {}, [$1, $3])
+  : name_list COLON var_init_decl -> new OutputDeclaration(@1.first_line, @1.first_column, {names: $1}, [].concat($3))
   ;
 
 output_declarations
   : VAR_OUTPUT (RETAIN | NON_RETAIN)?
       output_declaration SEMICOLON
       (output_declaration SEMICOLON)*
-    END_VAR -> new OutputDeclarations(@1.first_line, @1.first_column, {}, [$5.concat($3)])
+    END_VAR -> new OutputDeclarations(@1.first_line, @1.first_column, {}, $5.concat($3))
   ;
 
 input_output_declarations
   : VAR_IN_OUT
       var_declaration SEMICOLON
       (var_declaration SEMICOLON)*
-    END_VAR -> new InputOutputDeclarations(@1.first_line, @1.first_column, {}, [$3.concat($2)])
+    END_VAR -> new InputOutputDeclarations(@1.first_line, @1.first_column, {}, [].concat($3).concat($2))
   ;
 
 var_decl
@@ -586,7 +586,7 @@ var_declarations
   : VAR (CONSTANT)?
       var_init_decl SEMICOLON
       (var_init_decl SEMICOLON)*
-    END_VAR -> new VarDeclarations(@1.first_line, @1.first_column, {constant:(constant!==undefined)?true:false}, [$5.concat($3)])
+    END_VAR -> new VarDeclarations(@1.first_line, @1.first_column, {constant:(constant!==undefined)?true:false}, [].concat($5).concat($3))
   ;
 
 %%
