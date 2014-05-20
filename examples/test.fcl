@@ -1,6 +1,6 @@
 FUNCTION_BLOCK tipper
 
-VAR_INPUT
+VAR_INPUT RETAIN
     service : REAL;
     food : REAL;
 END_VAR

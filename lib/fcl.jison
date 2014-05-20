@@ -33,6 +33,8 @@ Conjunction                 = ast.Conjunction
 Disjunction                 = ast.Disjunction
 Conclusion                  = ast.Conclusion
 X                           = ast.X
+Subcondition                = ast.Subcondition
+Equation                    = ast.Equation
 DataTypeDeclarations        = ast.DataTypeDeclarations
 DataTypeDeclaration         = ast.DataTypeDeclaration
 EdgeDeclaration             = ast.EdgeDeclaration
@@ -184,20 +186,34 @@ condition_concat
   ;
 
 x
-  : (NOT)? ((subcondition) | (LPARA condition RPARA)) -> new X(@1.first_line, @1.first_column, {negation: ($1===undefined)?false:true}, [$2])
+  : (NOT)? ((subcondition) | (LPARA condition RPARA)) -> new X(@1.first_line, @1.first_column, {negation: ($1===undefined)?false:true}, [].concat($2))
   ;
 
 subcondition
-  : ID IS (NOT)? ID
+  : subcondition_equation -> new Subcondition(@1.first_line, @1.first_column, {}, [].concat($1))
   | ID -> $1
   ;
 
+subcondition_equation
+  : ID IS (NOT)? ID -> new Equation(@1.first_line, @1.first_column, {a: $1, b: $4, negatedB: ($3===undefined)?false:true})
+  ;
+
 conclusion
-  : ID (IS ID) (COMMA ID (IS ID)?)* -> new Conclusion(@1.first_line, @1.first_column, {}, [])
+  : conclusion_equation conclusion_concat* -> new Conclusion(@1.first_line, @1.first_column, {}, [].concat($1).concat($2))
+  | ID conclusion_concat* -> new Conclusion(@1.first_line, @1.first_column, {}, [].concat($1).concat($2))
+  ;
+
+conclusion_equation
+  : ID IS ID -> new Equation(@1.first_line, @1.first_column, {a: $1, b: $3, negatedB: false})
+  ;
+
+conclusion_concat
+  : COMMA conclusion_equation -> $2
+  | COMMA ID -> $2
   ;
 
 weighting_factor
-  : (variable | numeric_literal) -> new WeightingFactor(@1.first_line, @1.first_column, {}, $1])
+  : (variable | numeric_literal) -> new WeightingFactor(@1.first_line, @1.first_column, {}, [].concat($1))
   ;
 
 /* according to IEC 61131-3 */
@@ -415,11 +431,11 @@ generic_type_name
 data_type_declarations
   : TYPE type_declaration SEMICOLON
       (type_declaration SEMICOLON)*
-    END_TYPE -> new DataTypeDeclarations(@1.first_line, @1.first_column, {}, [$3.concat($2)])
+    END_TYPE -> new DataTypeDeclarations(@1.first_line, @1.first_column, {}, $3.concat($2))
   ;
 
 data_type_declaration
-  : ID COLON (spec_init | structure_declaration ) -> new DataTypeDeclaration(@1.first_line, @1.first_column, {name: $1}, [$3])
+  : ID COLON (spec_init | structure_declaration ) -> new DataTypeDeclaration(@1.first_line, @1.first_column, {name: $1}, [].concat($3))
   ;
 
 
@@ -489,8 +505,8 @@ structure_element_initialization
 /* VARIABLES */
 
 variable
-  : direct_variable
-  | symbolic_variable
+  : direct_variable -> $1
+  | symbolic_variable -> $1
   ;
 
 symbolic_variable
@@ -525,7 +541,7 @@ input_declarations
   : VAR_INPUT (RETAIN | NON_RETAIN)?
          input_declaration SEMICOLON
          (input_declaration SEMICOLON)*
-    END_VAR -> new InputDeclarations(@1.first_line, @1.first_column, {}, $5.concat($3))
+    END_VAR -> new InputDeclarations(@1.first_line, @1.first_column, {retain: ($2 === 'RETAIN')?true:false}, [].concat($5).concat($3))
   ;
 
 input_declaration
@@ -533,7 +549,7 @@ input_declaration
   ;
 
 edge_declaration
-  : BOOL (R_EDGE | F_EDGE) -> new EdgeDeclaration(@1.first_line, @1.first_column, {}, [])
+  : BOOL (R_EDGE | F_EDGE) -> new EdgeDeclaration(@1.first_line, @1.first_column, {risingEdge: ($2 === 'R_EDGE')?true:false}, [])
   ;
 
 var_init_decl
