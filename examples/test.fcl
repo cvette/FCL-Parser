@@ -1,3 +1,9 @@
+TYPE
+     test:  STRUCT
+                ID:INT := 1;
+            END_STRUCT;
+END_TYPE
+
 FUNCTION_BLOCK tipper
 
 VAR_INPUT RETAIN
@@ -29,15 +35,15 @@ DEFUZZIFY tip
 END_DEFUZZIFY
 
 RULEBLOCK no1
-    AND : MIN;
+    OR : MAX
+    AND : PROD;
     ACT : MIN;
     ACCU : MAX;
 
-    RULE 1 : IF NOT (service IS poor) OR food IS rancid
-                THEN tip IS cheap;
+    RULE 1 : IF NOT (service IS bad) OR food IS rancid
+                THEN tip IS cheap WITH test.high;
 
-    RULE 2 : IF service IS good
-                THEN tip IS average;
+    RULE 2 : IF service IS good THEN tip IS average;
 
     RULE 3 : IF service IS excellent AND food IS delicious
                 THEN tip IS generous;

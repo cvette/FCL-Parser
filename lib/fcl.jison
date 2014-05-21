@@ -38,6 +38,10 @@ Equation                    = ast.Equation
 DataTypeDeclarations        = ast.DataTypeDeclarations
 DataTypeDeclaration         = ast.DataTypeDeclaration
 EdgeDeclaration             = ast.EdgeDeclaration
+WeightingFactor             = ast.WeightingFactor
+StructuredVariable          = ast.StructuredVariable
+StructureDeclaration        = ast.StructureDeclaration
+StructureElementDeclaration = ast.StructureElementDeclaration
 
 %}
 
@@ -47,14 +51,14 @@ EdgeDeclaration             = ast.EdgeDeclaration
 
 library
   : data_type_declarations* function_block_declaration* EOF
-       { return new Library(@1.first_line, @1.first_column, {}, $1.concat($2)) }
+       { return new Library(@1.first_line, @1.first_column, {}, [].concat($1).concat($2)) }
   ;
 function_block_declaration
   : FUNCTION_BLOCK ID
          fb_io_var_declarations*
          other_var_declarations*
          function_block_body
-    END_FUNCTION_BLOCK -> new FunctionBlock(@1.first_line, @1.first_column, {name: $2}, $3.concat($4).concat($5))
+    END_FUNCTION_BLOCK -> new FunctionBlock(@1.first_line, @1.first_column, {name: $2}, [].concat($3).concat($4).concat($5))
   ;
 
 fb_io_var_declarations
@@ -89,7 +93,7 @@ defuzzify_block
   ;
 
 defuzzification_method
-  : METHOD COLON (CoG | CoGS | CoA | LM | RM) SEMICOLON -> new DefuzzificationMethod(@1.first_line, @1.first_column, {name: $3}, [])
+  : METHOD COLON (CoG | CoGS | CoA | LM | RM) SEMICOLON -> new DefuzzificationMethod(@1.first_line, @1.first_column, {method: $3}, [])
   ;
 
 default_value
@@ -105,6 +109,19 @@ rule_block
     END_RULEBLOCK -> new RuleBlock(@1.first_line, @1.first_column, {id: $2}, [].concat($3).concat($4).concat($5).concat($6))
   ;
 
+operator_definition
+  : operator_definition_disjunction?
+    operator_definition_conjunction? SEMICOLON
+            -> new OperatorDefinition(@1.first_line, @1.first_column, {orMethod: $1, andMethod: $2}, [])
+  ;
+
+operator_definition_disjunction
+  : OR COLON (MAX | ASUM | BSUM) -> $3
+  ;
+
+operator_definition_conjunction
+  : AND COLON (MIN | PROD | BDIF) -> $3
+  ;
 
 option_block
   : OPTION
@@ -113,7 +130,7 @@ option_block
   ;
 
 linguistic_term
-  : TERM ID ASSIGNMENT membership_function SEMICOLON -> new LinguisticTerm(@1.first_line, @1.first_column, {name: $2}, [$4])
+  : TERM ID ASSIGNMENT membership_function SEMICOLON -> new LinguisticTerm(@1.first_line, @1.first_column, {name: $2}, [].concat($4))
   ;
 
 membership_function
@@ -126,40 +143,27 @@ singleton
   ;
 
 points
-  : point* -> [].concat($1)
+  : point* -> $1
   ;
 
 point
-  : LPARA (numeric_literal | ID) COMMA numeric_literal RPARA -> new Point(@2.first_line, @2.first_column, {x: $2, y: $4}, [])
+  : LPARA (numeric_literal | ID) COMMA numeric_literal RPARA -> new Point(@2.first_line, @2.first_column, {x: $2, y: $4})
   ;
 
 defuzzification_method
-  : METHOD COLON defuzzifcation_method_option SEMICOLON -> new DefuzzificationMethod(@1.first_line, @1.first_column, {}, [$3])
+  : METHOD COLON defuzzifcation_method_option SEMICOLON -> new DefuzzificationMethod(@1.first_line, @1.first_column, {method: $3}, [])
   ;
 
 defuzzification_method_option
-  : CoG -> yytext
-  | CoGS -> yytext
-  | CoA -> yytext
-  | LM -> yytext
-  | RM -> yytext
+  : CoG -> $1
+  | CoGS -> $1
+  | CoA -> $1
+  | LM -> $1
+  | RM -> $1
   ;
 
 range
   : RANGE LPARA numeric_literal RANGEDOT numeric_literal RPARA SEMICOLON -> new Range(@3.first_line, @3.first_column, {start: $3, end: $5})
-  ;
-
-operator_definition
-  : operator_definition_disjunction?
-    operator_definition_conjunction? SEMICOLON -> new OperatorDefinition(@1.first_line, @1.first_column, {orMethod: $1, andMethod: $2}, [])
-  ;
-
-operator_definition_disjunction
-  : OR COLON (MAX | ASUM | BSUM) -> $3
-  ;
-
-operator_definition_conjunction
-  : AND COLON (MIN | PROD | BDIF) -> $3
   ;
 
 activation_method
@@ -172,12 +176,12 @@ accumulation_method
 
 rule
   : RULE integer_literal COLON
-    IF condition THEN conclusion (WITH weighting_factor)? SEMICOLON
-        { $$ = new Rule(@1.first_line, @1.first_column, {number: $2}, [$condition, $conclusion, $5])}
+    IF condition THEN conclusion (weighting_factor)? SEMICOLON
+        {{ $$ = new Rule(@1.first_line, @1.first_column, {number: $2}, [].concat($condition).concat($conclusion).concat($5).concat($8))}}
   ;
 
 condition
-  : x condition_concat* -> new Condition(@1.first_line, @1.first_column, {}, [$1, $2])
+  : x condition_concat* -> new Condition(@1.first_line, @1.first_column, {}, [].concat($1).concat($2))
   ;
 
 condition_concat
@@ -213,7 +217,7 @@ conclusion_concat
   ;
 
 weighting_factor
-  : (variable | numeric_literal) -> new WeightingFactor(@1.first_line, @1.first_column, {}, [].concat($1))
+  : WITH (variable | numeric_literal) -> new WeightingFactor(@1.first_line, @1.first_column, {}, [].concat($2));
   ;
 
 /* according to IEC 61131-3 */
@@ -221,7 +225,7 @@ weighting_factor
 constant
   : numeric_literal -> $1
   | character_string -> $1
-  | time_literal
+  | time_literal -> $1
   | bit_string_literal -> $1
   | boolean_literal -> $1
   ;
@@ -232,7 +236,7 @@ numeric_literal
   ;
 
 signed_integer
-  : (PLUS | DASH) integer -> ($1==='-')? ($2 * -1):$2
+  : (PLUS | DASH) integer -> ($1==='-')? ($2 * -1) : $2
   | integer -> $1
   ;
 
@@ -254,29 +258,31 @@ integer
 
 real_literal
   : real_type_name HASH REAL_NUMBER (exponent)?
+       {{ ($4 === undefined)? $3 : Math.pow($3, $4) }}
   | REAL_NUMBER (exponent)?
+       {{ ($4 === undefined)? $1 : Math.pow($1, $2) }}
   ;
 
 exponent
-  : (E) (PLUS | DASH)? integer
+  : E (PLUS | DASH)? integer -> new Number(yytext)
   ;
 
 bit_string_literal
-  : bit_string_type_name HASH bit_string_value
+  : bit_string_type_name HASH bit_string_value -> $1
   ;
 
 bit_string_value
   : integer -> $1
-  | BINARY_INTEGER -> new Number(yytext.substr(2).replace('_', ''))
-  | OCTAL_INTEGER -> new Number(yytext.substr(2).replace('_', ''))
-  | HEX_INTEGER -> new Number(yytext.substr(3).replace('_', ''))
+  | BINARY_INTEGER -> new Number($1.substr(2).replace('_', ''))
+  | OCTAL_INTEGER -> new Number($1.substr(2).replace('_', ''))
+  | HEX_INTEGER -> new Number($1.substr(3).replace('_', ''))
   ;
 
 bit_string_type_name
-  : BYTE
-  | WORD
-  | DWORD
-  | LWORD
+  : BYTE -> $1
+  | WORD -> $1
+  | DWORD -> $1
+  | LWORD -> $1
   ;
 
 boolean_literal
@@ -286,8 +292,8 @@ boolean_literal
 
 
 character_string
-  : SINGLE_BYTE_STRING -> new CharacterString(@1.first_line, @1.first_column, {string: yytext}, [])
-  | DOUBLE_BYTE_STRING -> new CharacterString(@1.first_line, @1.first_column, {string: yytext}, [])
+  : SINGLE_BYTE_STRING -> new CharacterString(@1.first_line, @1.first_column, {string: $1}, [])
+  | DOUBLE_BYTE_STRING -> new CharacterString(@1.first_line, @1.first_column, {string: $1}, [])
   ;
 
 /* TIME LITERALS */
@@ -331,7 +337,7 @@ seconds
   ;
 
 fixed_point
-  : integer (DOT integer)?
+  : integer (DOT integer)? -> new Number(yytext)
   ;
 
 /* TIME OF DAY AND DATE */
@@ -429,9 +435,9 @@ generic_type_name
 /* DERIVED DATA TYPES */
 
 data_type_declarations
-  : TYPE type_declaration SEMICOLON
-      (type_declaration SEMICOLON)*
-    END_TYPE -> new DataTypeDeclarations(@1.first_line, @1.first_column, {}, $3.concat($2))
+  : TYPE
+        data_type_declaration SEMICOLON (data_type_declaration SEMICOLON)*
+    END_TYPE -> new DataTypeDeclarations(@1.first_line, @1.first_column, {}, [].concat($2).concat($4))
   ;
 
 data_type_declaration
@@ -448,50 +454,57 @@ spec_init
   ;
 
 subrange_specification
-  : integer_type_name LPARA subrange RPARA
+  : integer_type_name LPARA subrange RPARA -> new SubrangeSpecification(@1.first_line, @1.first_column, {type: $1}, [].concat($3))
   ;
 
 subrange
-  : signed_integer RANGEDOT signed_integer -> new Range()
+  : signed_integer RANGEDOT signed_integer -> new Subrange(@1.first_line, @1.first_column, {start: $1, end: $3})
   ;
 
 enumerated_specification
-  : LPARA enumerated_value (COMMA enumerated_value)* RPARA
+  : LPARA enumerated_value (enumerated_value)* RPARA -> new EnumeratedSpecification(@1.first_line, @1.first_column, {}, [].concat($2).concat($3))
   ;
 
 enumerated_value
-  : ID HASH ID
-  | ID -> $1
+  : COMMA ID HASH ID
+  | COMMA ID -> $2
   ;
 
 array_specification
-  : ARRAY LBRACKET subrange (COMMA subrange)* RBRACKET OF (elementary_type_name | ID)
+  : ARRAY LBRACKET subrange subrange_concat* RBRACKET OF (elementary_type_name | ID)
+        -> new ArraySpecification(@1.first_line, @1.first_column, {}, [].concat($3))
+  ;
+
+subrange_concat
+  : COMMA subrange -> $2
   ;
 
 array_initialization
   : LBRACKET array_initial_elements (COMMA array_initial_elements)* RBRACKET
+        -> new ArrayInitialization(@1.first_line, @1.first_column, {}, [].concat($2).concat($3))
   ;
 
 array_initial_elements
-  : array_initial_element
+  : array_initial_element -> $1
   | integer LPARA (array_initial_element)? RPARA
   ;
 
 array_initial_element
-  : constant
-  | enumerated_value
-  | structure_initialization
-  | array_initialization
+  : constant -> $1
+  | enumerated_value -> $1
+  | structure_initialization -> $1
+  | array_initialization -> $1
   ;
 
 structure_declaration
-  : STRUCT structure_element_declaration SEMICOLON
-        (structure_element_declaration SEMICOLON)*
+  : STRUCT
+        structure_element_declaration SEMICOLON (structure_element_declaration SEMICOLON)*
     END_STRUCT
+         {{ $$ = new StructureDeclaration(@1.first_line, @1.first_column, {}, [].concat($2).concat($4)) }}
   ;
 
 structure_element_declaration
-  : ID COLON spec_init
+  : ID COLON spec_init -> new StructureElementDeclaration(@1.first_line, @1.first_column, {name: $1}, [].concat($3))
   ;
 
 structure_initialization
@@ -511,28 +524,38 @@ variable
 
 symbolic_variable
   : ID -> $1
-  | multi_element_variable
+  | multi_element_variable -> $1
   ;
 
 /* DIRECTLY REPRESENTED VALUES */
 
 direct_variable
   : DIRECT_VAR_PREFIX integer (DOT integer)*
+    {{ var type = $1.replace(/\s+/g, '').substr(1,1);
+       var val = $1.replace(/\s+/g, '').substr(2);
+       $$ = new DirectVariable(@1.first_line, @1.first_column, {type: type, value: val})
+    }}
   ;
 
 /* MULTI-ELEMENT VARIABLES */
 
 multi_element_variable
-  : array_variable
-  | structured_variable
+  : array_variable -> $1
+  | structured_variable -> $1
   ;
 
 array_variable
-  : symbolic_variable LBRACKET expression (COMMA expression)* RBRACKET
+  : symbolic_variable LBRACKET expression expression_concat* RBRACKET
+        -> new ArrayVariable(@1.first_line, @1.first_column, {variable: $1}, [].concat($3).concat($4))
+  ;
+
+expression_concat
+  : COMMA expression -> $2
   ;
 
 structured_variable
   : symbolic_variable DOT ID
+        -> new StructuredVariable(@1.first_line, @1.first_column, {structure: $1, variable: $3})
   ;
 
 /* DECLARATION AND INITIALIZATION */
@@ -541,23 +564,18 @@ input_declarations
   : VAR_INPUT (RETAIN | NON_RETAIN)?
          input_declaration SEMICOLON
          (input_declaration SEMICOLON)*
-    END_VAR -> new InputDeclarations(@1.first_line, @1.first_column, {retain: ($2 === 'RETAIN')?true:false}, [].concat($5).concat($3))
+    END_VAR
+        -> new InputDeclarations(@1.first_line, @1.first_column, {retain: ($2 === 'RETAIN')?true:false}, [].concat($5).concat($3))
   ;
 
 input_declaration
-  : name_list COLON (edge_declaration | var_init_decl) -> new InputDeclaration(@1.first_line, @1.first_column, {names: $1}, [].concat($3))
+  : name_list COLON (edge_declaration | spec_init)
+        -> new InputDeclaration(@1.first_line, @1.first_column, {names: $1}, [].concat($3))
   ;
 
 edge_declaration
-  : BOOL (R_EDGE | F_EDGE) -> new EdgeDeclaration(@1.first_line, @1.first_column, {risingEdge: ($2 === 'R_EDGE')?true:false}, [])
-  ;
-
-var_init_decl
-  : (spec_init | fb_name_decl) -> $1
-  ;
-
-fb_name_decl
-  : function_block_type_name (ASSIGNMENT structure_initialization)?
+  : BOOL (R_EDGE | F_EDGE)
+        -> new EdgeDeclaration(@1.first_line, @1.first_column, {risingEdge: ($2 === 'R_EDGE')?true:false}, [])
   ;
 
 name_list
@@ -569,7 +587,7 @@ name_list_concat
   ;
 
 output_declaration
-  : name_list COLON var_init_decl -> new OutputDeclaration(@1.first_line, @1.first_column, {names: $1}, [].concat($3))
+  : name_list COLON spec_init -> new OutputDeclaration(@1.first_line, @1.first_column, {names: $1}, [].concat($3))
   ;
 
 output_declarations
@@ -600,9 +618,10 @@ double_byte_string_spec
 
 var_declarations
   : VAR (CONSTANT)?
-      var_init_decl SEMICOLON
-      (var_init_decl SEMICOLON)*
-    END_VAR -> new VarDeclarations(@1.first_line, @1.first_column, {constant:(constant!==undefined)?true:false}, [].concat($5).concat($3))
+      spec_init SEMICOLON
+      (spec_init SEMICOLON)*
+    END_VAR
+        -> new VarDeclarations(@1.first_line, @1.first_column, {constant:(constant!==undefined)?true:false}, [].concat($5).concat($3))
   ;
 
 %%
