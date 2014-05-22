@@ -462,12 +462,12 @@ subrange
   ;
 
 enumerated_specification
-  : LPARA enumerated_value (enumerated_value)* RPARA -> new EnumeratedSpecification(@1.first_line, @1.first_column, {}, [].concat($2).concat($3))
+  : LPARA enumerated_value (COMMA enumerated_value)* RPARA -> new EnumeratedSpecification(@1.first_line, @1.first_column, {}, [].concat($2).concat($3))
   ;
 
 enumerated_value
-  : COMMA ID HASH ID
-  | COMMA ID -> $2
+  : ID HASH ID
+  | ID -> $2
   ;
 
 array_specification
@@ -549,8 +549,83 @@ array_variable
         -> new ArrayVariable(@1.first_line, @1.first_column, {variable: $1}, [].concat($3).concat($4))
   ;
 
+/* EXPRESSIONS */
+
 expression_concat
   : COMMA expression -> $2
+  ;
+
+expression
+  : xor_expression (OR xor_expression)*
+  ;
+
+xor_expression
+  : and_expression (XOR and_expression)*
+  ;
+
+and_expression
+  : comparison ((AMPERSAND | AND) comparison)*
+  ;
+
+comparison
+  : equ_expression ((EQUALS | UNEQUAL) equ_expression)*
+  ;
+
+equ_expression
+  : add_expression (comparison_operator add_expression)*
+  ;
+
+comparison_operator
+  : LOWER
+  | BIGGER
+  | LOWER_EQUAL
+  | BIGGER_EQUAL
+  ;
+
+add_expression
+  : term (add_operator term)*
+  ;
+
+add_operator
+  : PLUS -> $1
+  | DASH -> $1
+  ;
+
+term
+  : power_expression (multiply_operator power_expression)*
+  ;
+
+multiply_operator
+  : ASTERISK
+  | SLASH
+  | MOD
+  ;
+
+power_expression
+  : unary_expression (DOUBLE_ASTERISK unary_expression)*
+  ;
+
+unary_expression
+  : unary_operator? primary_expression
+  ;
+
+unary_operator
+  : DASH -> $1
+  | NOT -> $1
+  ;
+
+primary_expression
+  : constant -> $1
+  | ID HASH ID -> $1
+  | variable -> $1
+  | LPARA expression RPARA -> $1
+  | ID LPARA param_assignment (COMMA param_assignment)* RPARA -> $1
+  ;
+
+param_assignment
+  : ID ASSIGNMENT expression
+  | expression
+  | NOT? ID ARROW variable
   ;
 
 structured_variable
