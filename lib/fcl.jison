@@ -545,11 +545,11 @@ multi_element_variable
   ;
 
 array_variable
-  : symbolic_variable LBRACKET expression expression_concat* RBRACKET
+  : symbolic_variable LBRACKET integer RBRACKET
         -> new ArrayVariable(@1.first_line, @1.first_column, {variable: $1}, [].concat($3).concat($4))
   ;
 
-/* EXPRESSIONS */
+/* EXPRESSIONS
 
 expression_concat
   : COMMA expression -> $2
@@ -627,6 +627,8 @@ param_assignment
   | expression
   | NOT? ID ARROW variable
   ;
+
+*/
 
 structured_variable
   : symbolic_variable DOT ID
