@@ -35,13 +35,8 @@ Conclusion                  = ast.Conclusion
 X                           = ast.X
 Subcondition                = ast.Subcondition
 Equation                    = ast.Equation
-DataTypeDeclarations        = ast.DataTypeDeclarations
-DataTypeDeclaration         = ast.DataTypeDeclaration
 EdgeDeclaration             = ast.EdgeDeclaration
 WeightingFactor             = ast.WeightingFactor
-StructuredVariable          = ast.StructuredVariable
-StructureDeclaration        = ast.StructureDeclaration
-StructureElementDeclaration = ast.StructureElementDeclaration
 
 %}
 
@@ -126,7 +121,7 @@ operator_definition_conjunction
 option_block
   : OPTION
       /* any manufacturer specific parameters */
-    END_OPTION -> new OptionBlock(@$1.first_line, @$1.first_column, {}, [])
+    END_OPTION -> new OptionBlock(@1.first_line, @1.first_column, {}, [])
   ;
 
 linguistic_term
@@ -224,9 +219,6 @@ weighting_factor
 
 constant
   : numeric_literal -> $1
-  | character_string -> $1
-  | time_literal -> $1
-  | bit_string_literal -> $1
   | boolean_literal -> $1
   ;
 
@@ -267,109 +259,15 @@ exponent
   : E (PLUS | DASH)? integer -> new Number(yytext)
   ;
 
-bit_string_literal
-  : bit_string_type_name HASH bit_string_value -> $1
-  ;
-
-bit_string_value
-  : integer -> $1
-  | BINARY_INTEGER -> new Number($1.substr(2).replace('_', ''))
-  | OCTAL_INTEGER -> new Number($1.substr(2).replace('_', ''))
-  | HEX_INTEGER -> new Number($1.substr(3).replace('_', ''))
-  ;
-
-bit_string_type_name
-  : BYTE -> $1
-  | WORD -> $1
-  | DWORD -> $1
-  | LWORD -> $1
-  ;
-
 boolean_literal
   : TRUE -> true
   | FALSE -> false
-  ;
-
-
-character_string
-  : SINGLE_BYTE_STRING -> new CharacterString(@1.first_line, @1.first_column, {string: $1}, [])
-  | DOUBLE_BYTE_STRING -> new CharacterString(@1.first_line, @1.first_column, {string: $1}, [])
-  ;
-
-/* TIME LITERALS */
-
-time_literal
-  : duration
-  | time_of_day
-  | date
-  | date_and_time
-  ;
-
-/* DURATION */
-
-duration
-  : DURATION_PREFIX interval
-  ;
-
-interval
-  : days | hours | minutes | seconds | milliseconds
-  ;
-
-interval_prefix
-  : fixed_point (D|H|M|S|MS)
-  | integer (days|hours|minutes|seconds)
-  ;
-
-days
-  : D (LDASH)? hours
-  ;
-
-hours
-  : H (LDASH)? minutes
-  ;
-
-minutes
-  : M (LDASH)? seconds
-  ;
-
-seconds
-  : S (LDASH)? milliseconds
-  ;
-
-fixed_point
-  : integer (DOT integer)? -> new Number(yytext)
-  ;
-
-/* TIME OF DAY AND DATE */
-
-time_of_day
-  : (TIME_OF_DAY | TOD) HASH daytime
-  ;
-
-daytime
-  : integer COLON integer COLON fixed_point
-  ;
-
-date
-  : (DATE | D) HASH date_literal
-  ;
-
-date_literal
-  : integer DASH integer DASH integer
-  ;
-
-date_and_time
-  : (DATE_AND_TIME | DT) HASH date_literal DASH daytime
   ;
 
 /* ELEMENTARY DATA TYPES */
 
 elementary_type_name
   : numeric_type_name -> $1
-  | date_type_name -> $1
-  | bit_identifier -> $1
-  | (STRING|WSTRING) (LBRACKET integer RBRACKET)? (ASSIGNMENT character_string)?
-  | TIME -> $1
   ;
 
 numeric_type_name
@@ -383,257 +281,32 @@ integer_type_name
   ;
 
 signed_integer_type_name
-  : SINT -> $1
-  | INT -> $1
-  | DINT -> $1
-  | LINT -> $1
-  ;
-
-unsigned_integer_type_name
-  : USINT -> $1
-  | UINT -> $1
-  | UDINT -> $1
-  | ULINT -> $1
+  : INT -> $1
   ;
 
 real_type_name
   : REAL -> $1
-  | LREAL -> $1
-  ;
-
-date_type_name
-  : DATE -> $1
-  | TIME_OF_DAY -> $1
-  | TOD -> $1
-  | DATE_AND_TIME -> $1
-  | DT -> $1
   ;
 
 bit_identifier
   : BOOL -> $1
-  | BYTE -> $1
-  | WORD -> $1
-  | DWORD -> $1
-  | LWORD -> $1
-  ;
-
-/* GENERIC DATA TYPES */
-
-generic_type_name
-  : ANY_DERIVED -> $1
-  | ANY_ELEMENTARY -> $1
-  | ANY_MAGNITUDE -> $1
-  | ANY_NUM -> $1
-  | ANY_REAL -> $1
-  | ANY_INT -> $1
-  | ANY_BIT -> $1
-  | ANY_STRING -> $1
-  | ANY_DATE -> $1
-  | ANY -> $1
-  ;
-
-/* DERIVED DATA TYPES */
-
-data_type_declarations
-  : TYPE
-        data_type_declaration SEMICOLON (data_type_declaration SEMICOLON)*
-    END_TYPE -> new DataTypeDeclarations(@1.first_line, @1.first_column, {}, [].concat($2).concat($4))
-  ;
-
-data_type_declaration
-  : ID COLON (spec_init | structure_declaration ) -> new DataTypeDeclaration(@1.first_line, @1.first_column, {name: $1}, [].concat($3))
   ;
 
 
-spec_init
-  : elementary_type_name (ASSIGNMENT constant)?
-  | subrange_specification (ASSIGNMENT signed_integer)?
-  | enumerated_specification (ASSIGNMENT enumerated_value)?
-  | array_specification (ASSIGNMENT array_initialization)?
-  | ID (ASSIGNMENT (constant|enumerated_value|array_initialization|structure_initialization))?
-  ;
-
-subrange_specification
-  : integer_type_name LPARA subrange RPARA -> new SubrangeSpecification(@1.first_line, @1.first_column, {type: $1}, [].concat($3))
-  ;
-
-subrange
-  : signed_integer RANGEDOT signed_integer -> new Subrange(@1.first_line, @1.first_column, {start: $1, end: $3})
-  ;
-
-enumerated_specification
-  : LPARA enumerated_value (COMMA enumerated_value)* RPARA -> new EnumeratedSpecification(@1.first_line, @1.first_column, {}, [].concat($2).concat($3))
-  ;
-
-enumerated_value
-  : ID HASH ID
-  | ID -> $2
-  ;
-
-array_specification
-  : ARRAY LBRACKET subrange subrange_concat* RBRACKET OF (elementary_type_name | ID)
-        -> new ArraySpecification(@1.first_line, @1.first_column, {}, [].concat($3))
-  ;
-
-subrange_concat
-  : COMMA subrange -> $2
-  ;
-
-array_initialization
-  : LBRACKET array_initial_elements (COMMA array_initial_elements)* RBRACKET
-        -> new ArrayInitialization(@1.first_line, @1.first_column, {}, [].concat($2).concat($3))
-  ;
-
-array_initial_elements
-  : array_initial_element -> $1
-  | integer LPARA (array_initial_element)? RPARA
-  ;
-
-array_initial_element
-  : constant -> $1
-  | enumerated_value -> $1
-  | structure_initialization -> $1
-  | array_initialization -> $1
-  ;
-
-structure_declaration
-  : STRUCT
-        structure_element_declaration SEMICOLON (structure_element_declaration SEMICOLON)*
-    END_STRUCT
-         {{ $$ = new StructureDeclaration(@1.first_line, @1.first_column, {}, [].concat($2).concat($4)) }}
-  ;
-
-structure_element_declaration
-  : ID COLON spec_init -> new StructureElementDeclaration(@1.first_line, @1.first_column, {name: $1}, [].concat($3))
-  ;
-
-structure_initialization
-  : LPARA structure_element_initialization (COMMA structure_element_initialization)* RPARA
-  ;
-
-structure_element_initialization
-  : ID ASSIGNMENT (constant | enumerated_value | array_initialization | structure_initialization)
+simple_spec_init
+  : ID COLON elementary_type_name (ASSIGNMENT constant)?
   ;
 
 /* VARIABLES */
 
 variable
-  : direct_variable -> $1
-  | symbolic_variable -> $1
+  : symbolic_variable -> $1
   ;
 
 symbolic_variable
   : ID -> $1
-  | multi_element_variable -> $1
   ;
 
-/* DIRECTLY REPRESENTED VALUES */
-
-direct_variable
-  : DIRECT_VAR_PREFIX integer (DOT integer)*
-    {{ var type = $1.replace(/\s+/g, '').substr(1,1);
-       var val = $1.replace(/\s+/g, '').substr(2);
-       $$ = new DirectVariable(@1.first_line, @1.first_column, {type: type, value: val})
-    }}
-  ;
-
-/* MULTI-ELEMENT VARIABLES */
-
-multi_element_variable
-  : array_variable -> $1
-  | structured_variable -> $1
-  ;
-
-array_variable
-  : symbolic_variable LBRACKET integer RBRACKET
-        -> new ArrayVariable(@1.first_line, @1.first_column, {variable: $1}, [].concat($3).concat($4))
-  ;
-
-/* EXPRESSIONS
-
-expression_concat
-  : COMMA expression -> $2
-  ;
-
-expression
-  : xor_expression (OR xor_expression)*
-  ;
-
-xor_expression
-  : and_expression (XOR and_expression)*
-  ;
-
-and_expression
-  : comparison ((AMPERSAND | AND) comparison)*
-  ;
-
-comparison
-  : equ_expression ((EQUALS | UNEQUAL) equ_expression)*
-  ;
-
-equ_expression
-  : add_expression (comparison_operator add_expression)*
-  ;
-
-comparison_operator
-  : LOWER
-  | BIGGER
-  | LOWER_EQUAL
-  | BIGGER_EQUAL
-  ;
-
-add_expression
-  : term (add_operator term)*
-  ;
-
-add_operator
-  : PLUS -> $1
-  | DASH -> $1
-  ;
-
-term
-  : power_expression (multiply_operator power_expression)*
-  ;
-
-multiply_operator
-  : ASTERISK
-  | SLASH
-  | MOD
-  ;
-
-power_expression
-  : unary_expression (DOUBLE_ASTERISK unary_expression)*
-  ;
-
-unary_expression
-  : unary_operator? primary_expression
-  ;
-
-unary_operator
-  : DASH -> $1
-  | NOT -> $1
-  ;
-
-primary_expression
-  : constant -> $1
-  | ID HASH ID -> $1
-  | variable -> $1
-  | LPARA expression RPARA -> $1
-  | ID LPARA param_assignment (COMMA param_assignment)* RPARA -> $1
-  ;
-
-param_assignment
-  : ID ASSIGNMENT expression
-  | expression
-  | NOT? ID ARROW variable
-  ;
-
-*/
-
-structured_variable
-  : symbolic_variable DOT ID
-        -> new StructuredVariable(@1.first_line, @1.first_column, {structure: $1, variable: $3})
-  ;
 
 /* DECLARATION AND INITIALIZATION */
 
@@ -664,7 +337,7 @@ name_list_concat
   ;
 
 output_declaration
-  : name_list COLON spec_init -> new OutputDeclaration(@1.first_line, @1.first_column, {names: $1}, [].concat($3))
+  : name_list COLON simple_spec_init -> new OutputDeclaration(@1.first_line, @1.first_column, {names: $1}, [].concat($3))
   ;
 
 output_declarations
@@ -682,21 +355,13 @@ input_output_declarations
   ;
 
 var_decl
-  : name_list COLON (elementary_type_name | subrange_specification | enumerated_specification | array_specification | ID | fb_name_decl)
-  ;
-
-single_byte_string_spec
-  : STRING (LBRACKET integer RBRACKET)? (ASSIGNMENT single_byte_character_string)?
-  ;
-
-double_byte_string_spec
-  : WSTRING (LBRACKET integer RBRACKET)? (ASSIGNMENT double_byte_character_string)?
+  : name_list COLON (elementary_type_name | ID)
   ;
 
 var_declarations
   : VAR (CONSTANT)?
-      spec_init SEMICOLON
-      (spec_init SEMICOLON)*
+      simple_spec_init SEMICOLON
+      (simple_spec_init SEMICOLON)*
     END_VAR
         -> new VarDeclarations(@1.first_line, @1.first_column, {constant:(constant!==undefined)?true:false}, [].concat($5).concat($3))
   ;

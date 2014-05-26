@@ -2,8 +2,6 @@
 
 DIGIT = [0-9]
 IDENTIFIER = ([a-zA-Z] | (\_([a-zA-Z] | [0-9]))) ((\_)? ([a-zA-Z] | [0-9]))*
-SINGLE_BYTE_STRING = \'[.^\']|"$\'"\'
-DOUBLE_BYTE_STRING = \"[.^\']|"$\""\"
 BINARY_INTEGER = "2#"\s*[0-1]\s*(\_?[0-1])*
 OCTAL_INTEGER = "8#"\s*[0-7]\s*(\_?[0-7])*
 HEX_INTEGER = "16#"\s*[0-9A-F]\s*(\_?[0-9A-F])*
@@ -106,8 +104,6 @@ SINT                return 'SINT'
 END_STRUCT          return 'END_STRUCT'
 FALSE               return 'FALSE'
 TRUE                return 'TRUE'
-{SINGLE_BYTE_STRING} return 'SINGLE_BYTE_STRING'
-{DOUBLE_BYTE_STRING} return 'DOUBLE_BYTE_STRING'
 {IDENTIFIER}        return 'ID'
 {BINARY_INTEGER}    return 'BINARY_INTEGER'
 {OCTAL_INTEGER}     return 'OCTAL_INTEGER'
