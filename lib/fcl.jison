@@ -10,7 +10,7 @@ OutputDeclarations          = ast.OutputDeclarations
 OutputDeclaration           = ast.OutputDeclaration
 VarDeclarations             = ast.VarDeclarations
 InputOutputDeclarations     = ast.InputOutputDeclarations
-DataType                    = ast.DataType
+SimpleSpecInit              = ast.SimpleSpecInit
 FunctionBlock               = ast.FunctionBlock
 FunctionBlockBody           = ast.FunctionBlockBody
 FuzzifyBlock                = ast.FuzzifyBlock
@@ -294,7 +294,7 @@ bit_identifier
 
 
 simple_spec_init
-  : ID COLON elementary_type_name (ASSIGNMENT constant)?
+  : elementary_type_name (ASSIGNMENT constant)? -> new SimpleSpecInit(@1.first_line, @1.first_column, {}, [])
   ;
 
 /* VARIABLES */
@@ -319,7 +319,7 @@ input_declarations
   ;
 
 input_declaration
-  : name_list COLON (edge_declaration | spec_init)
+  : name_list COLON (edge_declaration | simple_spec_init)
         -> new InputDeclaration(@1.first_line, @1.first_column, {names: $1}, [].concat($3))
   ;
 
