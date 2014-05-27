@@ -37,7 +37,9 @@ Subcondition                = ast.Subcondition
 Equation                    = ast.Equation
 EdgeDeclaration             = ast.EdgeDeclaration
 WeightingFactor             = ast.WeightingFactor
-
+SimpleSpecInit              = ast.SimpleSpecInit
+VarDeclaration              = ast.VarDeclaration
+VarInitDecl                 = ast.VarInitDecl
 %}
 
 %ebnf
@@ -69,13 +71,13 @@ function_block_body
   : fuzzify_block*
     defuzzify_block*
     rule_block*
-    option_block* -> new FunctionBlockBody(@1.first_line, @1.first_column, {}, $1.concat($2).concat($3).concat($4))
+    option_block* -> new FunctionBlockBody(@1.first_line, @1.first_column, {}, [].concat($1).concat($2).concat($3).concat($4))
   ;
 
 fuzzify_block
   : FUZZIFY ID
          linguistic_term*
-    END_FUZZIFY -> new FuzzifyBlock(@2.first_line, @2.first_column, {variable: $2}, [$3])
+    END_FUZZIFY -> new FuzzifyBlock(@2.first_line, @2.first_column, {variable: $2}, [].concat($3))
   ;
 
 defuzzify_block
@@ -84,7 +86,7 @@ defuzzify_block
          linguistic_term*
          defuzzification_method
          default_value
-    END_DEFUZZIFY -> new DefuzzifyBlock(@1.first_line, @1.first_column, {variable: $2}, [$3, $4, $5, $6])
+    END_DEFUZZIFY -> new DefuzzifyBlock(@1.first_line, @1.first_column, {variable: $2}, [].concat($3).concat($4).concat($5).concat($6))
   ;
 
 defuzzification_method
@@ -212,7 +214,7 @@ conclusion_concat
   ;
 
 weighting_factor
-  : WITH (variable | numeric_literal) -> new WeightingFactor(@1.first_line, @1.first_column, {}, [].concat($2));
+  : WITH (ID | numeric_literal) -> new WeightingFactor(@1.first_line, @1.first_column, {}, [].concat($2));
   ;
 
 /* according to IEC 61131-3 */
@@ -292,19 +294,12 @@ bit_identifier
   : BOOL -> $1
   ;
 
-
 simple_spec_init
-  : elementary_type_name (ASSIGNMENT constant)? -> new SimpleSpecInit(@1.first_line, @1.first_column, {}, [])
+  : elementary_type_name simple_spec_init_value? -> new SimpleSpecInit(@1.first_line, @1.first_column, {type: $1, constant: $2}, [])
   ;
 
-/* VARIABLES */
-
-variable
-  : symbolic_variable -> $1
-  ;
-
-symbolic_variable
-  : ID -> $1
+simple_spec_init_value
+  : ASSIGNMENT constant -> $2
   ;
 
 
@@ -336,15 +331,11 @@ name_list_concat
   : COMMA ID -> $2
   ;
 
-output_declaration
-  : name_list COLON simple_spec_init -> new OutputDeclaration(@1.first_line, @1.first_column, {names: $1}, [].concat($3))
-  ;
-
 output_declarations
   : VAR_OUTPUT (RETAIN | NON_RETAIN)?
-      output_declaration SEMICOLON
-      (output_declaration SEMICOLON)*
-    END_VAR -> new OutputDeclarations(@1.first_line, @1.first_column, {}, $5.concat($3))
+      var_init_decl SEMICOLON
+      (var_init_decl SEMICOLON)*
+    END_VAR -> new OutputDeclarations(@1.first_line, @1.first_column, {}, [].concat($5).concat($3))
   ;
 
 input_output_declarations
@@ -354,14 +345,18 @@ input_output_declarations
     END_VAR -> new InputOutputDeclarations(@1.first_line, @1.first_column, {}, [].concat($3).concat($2))
   ;
 
-var_decl
-  : name_list COLON (elementary_type_name | ID)
+var_declaration
+  : name_list COLON elementary_type_name -> new VarDeclaration(@1.first_line, @1.first_column, {names: $1, type: $3}, [])
+  ;
+
+var_init_decl
+  : name_list COLON simple_spec_init -> new VarInitDecl(@1.first_line, @1.first_column, {names: $1}, [].concat($3))
   ;
 
 var_declarations
   : VAR (CONSTANT)?
-      simple_spec_init SEMICOLON
-      (simple_spec_init SEMICOLON)*
+       var_init_decl SEMICOLON
+      (var_init_decl SEMICOLON)*
     END_VAR
         -> new VarDeclarations(@1.first_line, @1.first_column, {constant:(constant!==undefined)?true:false}, [].concat($5).concat($3))
   ;
