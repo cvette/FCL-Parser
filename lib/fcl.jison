@@ -1,7 +1,7 @@
 /* Fuzzy Control Language (FCL) */
 
 %{
-var ast = require('fcl_ast'),
+var ast = require('./fcl_ast');
 
 Library                     = ast.Library
 InputDeclarations           = ast.InputDeclarations

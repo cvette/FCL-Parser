@@ -4,6 +4,7 @@ FUNCTION_BLOCK tipper
 VAR_INPUT RETAIN
     service : REAL;
     food : REAL;
+    food : REAL;
 END_VAR
 
 VAR_OUTPUT
