@@ -36,9 +36,9 @@ RULEBLOCK no1
     ACCU : MAX;
 
     RULE 1 : IF NOT (service IS poor) OR food IS rancid
-                THEN tip IS cheap WITH test;
+                THEN tip IS cheap WITH service;
 
-    RULE 2 : IF service IS good THEN tip IS average;
+    RULE 2 : IF service THEN tip IS average;
 
     RULE 3 : IF service IS excellent AND food IS delicious
                 THEN tip IS generous;

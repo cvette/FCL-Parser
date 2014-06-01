@@ -42,6 +42,8 @@ VarDeclaration              = ast.VarDeclaration
 VarInitDecl                 = ast.VarInitDecl
 RealType                    = ast.DataTypes.REAL
 IntegerType                 = ast.DataTypes.INTEGER
+OperatorAlgorithms          = ast.OperatorAlgorithms
+DefuzzificationMethods      = ast.DefuzzificationMethods
 %}
 
 %ebnf
@@ -92,7 +94,15 @@ defuzzify_block
   ;
 
 defuzzification_method
-  : METHOD COLON (CoG | CoGS | CoA | LM | RM) SEMICOLON -> new DefuzzificationMethod(@1.first_line, @1.first_column, {method: $3}, [])
+  : METHOD COLON defuzzification_method_options SEMICOLON -> new DefuzzificationMethod(@1.first_line, @1.first_column, {method: $3}, [])
+  ;
+
+defuzzification_method_options
+  : CoG -> DefuzzificationMethods.COG
+  | CoGS -> DefuzzificationMethods.COGS
+  | CoA -> DefuzzificationMethods.COA
+  | LM -> DefuzzificationMethods.LM
+  | RM -> DefuzzificationMethods.RM
   ;
 
 default_value
@@ -105,7 +115,7 @@ rule_block
         activation_method?
         accumulation_method
         rule*
-    END_RULEBLOCK -> new RuleBlock(@1.first_line, @1.first_column, {ID: $2}, [].concat($3).concat($4).concat($5).concat($6))
+    END_RULEBLOCK -> new RuleBlock(@1.first_line, @1.first_column, {id: $2}, [].concat($3).concat($4).concat($5).concat($6))
   ;
 
 operator_definition
@@ -115,11 +125,23 @@ operator_definition
   ;
 
 operator_definition_disjunction
-  : OR COLON (MAX | ASUM | BSUM) -> $3
+  : OR COLON disjunction_algorithms -> $3
+  ;
+
+disjunction_algorithms
+  : MAX -> OperatorAlgorithms.MAX
+  | ASUM -> OperatorAlgorithms.ASUM
+  | BSUM -> OperatorAlgorithms.BSUM
   ;
 
 operator_definition_conjunction
-  : AND COLON (MIN | PROD | BDIF) -> $3
+  : AND COLON conjunction_algorithms -> $3
+  ;
+
+conjunction_algorithms
+  : MIN -> OperatorAlgorithms.MIN
+  | PROD -> OperatorAlgorithms.PROD
+  | BDIF -> OperatorAlgorithms.BDIF
   ;
 
 option_block
@@ -147,18 +169,6 @@ points
 
 point
   : LPARA (numeric_literal | ID) COMMA numeric_literal RPARA -> new Point(@2.first_line, @2.first_column, {x: $2, y: $4})
-  ;
-
-defuzzification_method
-  : METHOD COLON defuzzifcation_method_option SEMICOLON -> new DefuzzificationMethod(@1.first_line, @1.first_column, {method: $3}, [])
-  ;
-
-defuzzification_method_option
-  : CoG -> $1
-  | CoGS -> $1
-  | CoA -> $1
-  | LM -> $1
-  | RM -> $1
   ;
 
 range
@@ -194,7 +204,7 @@ x
 
 subcondition
   : subcondition_equation -> new Subcondition(@1.first_line, @1.first_column, {}, [].concat($1))
-  | ID -> $1
+  | ID -> new Subcondition(@1.first_line, @1.first_column, {}, [].concat($1))
   ;
 
 subcondition_equation
@@ -216,7 +226,7 @@ conclusion_concat
   ;
 
 weighting_factor
-  : WITH (ID | numeric_literal) -> new WeightingFactor(@1.first_line, @1.first_column, {}, [].concat($2));
+  : WITH (ID | numeric_literal) -> new WeightingFactor(@1.first_line, @1.first_column, {factor: $2});
   ;
 
 /* according to IEC 61131-3 */
