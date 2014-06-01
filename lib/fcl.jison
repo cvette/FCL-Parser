@@ -18,6 +18,7 @@ RuleBlock                   = ast.RuleBlock
 OptionBlock                 = ast.OptionBlock
 LinguisticTerm              = ast.LinguisticTerm
 MembershipFunction          = ast.MembershipFunction
+Singleton                   = ast.Singleton
 Point                       = ast.Point
 Rule                        = ast.Rule
 Range                       = ast.Range
@@ -39,6 +40,8 @@ WeightingFactor             = ast.WeightingFactor
 SimpleSpecInit              = ast.SimpleSpecInit
 VarDeclaration              = ast.VarDeclaration
 VarInitDecl                 = ast.VarInitDecl
+RealType                    = ast.DataTypes.REAL
+IntegerType                 = ast.DataTypes.INTEGER
 %}
 
 %ebnf
@@ -102,7 +105,7 @@ rule_block
         activation_method?
         accumulation_method
         rule*
-    END_RULEBLOCK -> new RuleBlock(@1.first_line, @1.first_column, {id: $2}, [].concat($3).concat($4).concat($5).concat($6))
+    END_RULEBLOCK -> new RuleBlock(@1.first_line, @1.first_column, {ID: $2}, [].concat($3).concat($4).concat($5).concat($6))
   ;
 
 operator_definition
@@ -134,8 +137,8 @@ membership_function
   ;
 
 singleton
-  : numeric_literal -> $1
-  | ID -> $1
+  : numeric_literal -> new Singleton(@1.first_line, @1.first_column, {value: $1})
+  | ID -> new Singleton(@1.first_line, @1.first_column, {value: $1})
   ;
 
 points
@@ -282,15 +285,11 @@ integer_type_name
   ;
 
 signed_integer_type_name
-  : INT -> $1
+  : INT -> IntegerType
   ;
 
 real_type_name
-  : REAL -> $1
-  ;
-
-bit_identifier
-  : BOOL -> $1
+  : REAL -> RealType
   ;
 
 simple_spec_init
@@ -361,3 +360,4 @@ var_declarations
   ;
 
 %%
+

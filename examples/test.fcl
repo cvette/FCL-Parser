@@ -4,7 +4,6 @@ FUNCTION_BLOCK tipper
 VAR_INPUT RETAIN
     service : REAL;
     food : REAL;
-    food : REAL;
 END_VAR
 
 VAR_OUTPUT
@@ -12,8 +11,8 @@ VAR_OUTPUT
 END_VAR
 
 FUZZIFY service
-    TERM poor := (0, 1) (4, 0);
-    TERM good := (1, 0) (4,1) (6,1) (9,0);
+    TERM poor := service;
+    TERM good := (food, 0) (4,1) (6,1) (9,0);
     TERM excellent := (6, 0) (9, 1);
 END_FUZZIFY
 
@@ -36,7 +35,7 @@ RULEBLOCK no1
     ACT : MIN;
     ACCU : MAX;
 
-    RULE 1 : IF NOT (service IS bad) OR food IS rancid
+    RULE 1 : IF NOT (service IS poor) OR food IS rancid
                 THEN tip IS cheap WITH test;
 
     RULE 2 : IF service IS good THEN tip IS average;
