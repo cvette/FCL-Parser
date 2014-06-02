@@ -3,6 +3,13 @@ FCL - Parser
 A parser for the Fuzzy Control Language (FCL) standardized by IEC 61131-7. FCL is a domain-specific programming language for fuzzy logic.
 
 
+###Install
+There is no official release, yet. You can install it via this git repository for now:
+
+```
+npm install git+http://github.com/cvette/FCL-Parser.git
+```
+
 ###Usage
 The parser can either be used directly in JavaScript or via the command line interface.
 
