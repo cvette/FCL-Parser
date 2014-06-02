@@ -52,7 +52,7 @@ DefuzzificationMethods      = ast.DefuzzificationMethods
 
 library
   : data_type_declarations* function_block_declaration* EOF
-       { return new Library(@1.first_line, @1.first_column, {}, [].concat($1).concat($2)) }
+       { return new Library(@1.first_line, @1.first_column, {}, [].concat($1).concat($2)).simplify() }
   ;
 function_block_declaration
   : FUNCTION_BLOCK ID

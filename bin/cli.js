@@ -39,9 +39,8 @@ fs.readFile(program.args[0], "utf8", function (err, data) {
     }
 
     var res = fcl.parse(data);
-    var json = res.toJSON();
 
-    fs.writeFile(outputFile, JSON.stringify(json, undefined, 2), function (err) {
+    fs.writeFile(outputFile, JSON.stringify(res, undefined, 2), function (err) {
         if(err) {
             console.log('could not write to output file "' + outputFile + '"');
             process.exit(1);
