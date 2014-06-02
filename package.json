@@ -2,6 +2,7 @@
     "author": "Christian Vette",
     "name": "fcl-parser",
     "description": "A parser for the Fuzzy Control Language (FCL)",
+    "keywords": ["FCL", "Fuzzy Logic", "Fuzzy Control Language", "Parser"],
     "version": "0.0.1",
     "license": "MIT",
     "repository": {
@@ -12,9 +13,12 @@
         "url": "http://github.com/cvette/fcl-parser/issues"
     },
     "main": "./lib/fcl",
-    "keywords": ["FCL", "Fuzzy Logic", "Fuzzy Control Language", "Parser"],
+    "bin": "./bin/cli.js",
     "engines": {
         "node": ">=0.4.0"
+    },
+    "dependencies": {
+        "commander": "2.2.x"
     },
     "devDependencies": {
         "mocha": "1.20.x",
