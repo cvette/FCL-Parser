@@ -22,6 +22,7 @@
     },
     "devDependencies": {
         "mocha": "1.20.x",
+        "chai": "1.9.x",
         "jison": "0.4.x"
     },
     "scripts": {

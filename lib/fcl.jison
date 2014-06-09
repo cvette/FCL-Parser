@@ -1,7 +1,8 @@
 /* Fuzzy Control Language (FCL) */
 
 %{
-var ast = require('./fcl_ast');
+
+var ast = require('./fcl_ast').AST();
 
 Library                     = ast.Library
 InputDeclarations           = ast.InputDeclarations
@@ -266,11 +267,11 @@ real_literal
   : real_type_name HASH REAL_NUMBER (exponent)?
        {{ ($4 === undefined)? $3 : Math.pow($3, $4) }}
   | REAL_NUMBER (exponent)?
-       {{ ($4 === undefined)? $1 : Math.pow($1, $2) }}
+       {{ ($2 === undefined)? $1 : Math.pow($1, $2) }}
   ;
 
 exponent
-  : E (PLUS | DASH)? integer -> new Number(yytext)
+  : EXPONENT -> new Number($1.substr(1))
   ;
 
 boolean_literal
@@ -302,14 +303,6 @@ real_type_name
   : REAL -> RealType
   ;
 
-simple_spec_init
-  : elementary_type_name simple_spec_init_value? -> new SimpleSpecInit(@1.first_line, @1.first_column, {type: $1, constant: $2}, [])
-  ;
-
-simple_spec_init_value
-  : ASSIGNMENT constant -> $2
-  ;
-
 
 /* DECLARATION AND INITIALIZATION */
 
@@ -339,11 +332,19 @@ name_list_concat
   : COMMA ID -> $2
   ;
 
+simple_spec_init
+  : elementary_type_name simple_spec_init_value? -> new SimpleSpecInit(@1.first_line, @1.first_column, {type: $1, constant: $2}, [])
+  ;
+
+simple_spec_init_value
+  : ASSIGNMENT constant -> $2
+  ;
+
 output_declarations
   : VAR_OUTPUT (RETAIN | NON_RETAIN)?
       var_init_decl SEMICOLON
       (var_init_decl SEMICOLON)*
-    END_VAR -> new OutputDeclarations(@1.first_line, @1.first_column, {}, [].concat($5).concat($3))
+    END_VAR -> new OutputDeclarations(@1.first_line, @1.first_column, {retain: ($2 === 'RETAIN')?true:false}, [].concat($5).concat($3))
   ;
 
 input_output_declarations

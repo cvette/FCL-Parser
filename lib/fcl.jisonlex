@@ -5,7 +5,8 @@ IDENTIFIER = ([a-zA-Z] | (\_([a-zA-Z] | [0-9]))) ((\_)? ([a-zA-Z] | [0-9]))*
 BINARY_INTEGER = "2#"\s*[0-1]\s*(\_?[0-1])*
 OCTAL_INTEGER = "8#"\s*[0-7]\s*(\_?[0-7])*
 HEX_INTEGER = "16#"\s*[0-9A-F]\s*(\_?[0-9A-F])*
-REAL = (\+|\-)?[0-9](\_?[0-9])*\.[0-9](\_?[0-9])*
+REAL_NUMBER = (\+|\-)?[0-9](\_?[0-9])*\.[0-9](\_?[0-9])*
+EXPONENT = "E"(\+|\-)?[0-9](\_?[0-9])*
 
 %options flex case-insensitive
 
@@ -63,13 +64,13 @@ VAR                 return 'VAR'
 WITH                return 'WITH'
 FALSE               return 'FALSE'
 TRUE                return 'TRUE'
+{EXPONENT}          return 'EXPONENT'
 {IDENTIFIER}        return 'ID'
 {BINARY_INTEGER}    return 'BINARY_INTEGER'
 {OCTAL_INTEGER}     return 'OCTAL_INTEGER'
 {HEX_INTEGER}       return 'HEX_INTEGER'
 {REAL_NUMBER}       return 'REAL_NUMBER'
 {DIGIT}             return 'DIGIT'
-{LETTER}            return 'LETTER'
 "#"                 return 'HASH'
 "+"                 return 'PLUS'
 "-"                 return 'DASH'
