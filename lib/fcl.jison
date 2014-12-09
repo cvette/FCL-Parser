@@ -200,7 +200,11 @@ condition_concat
   ;
 
 x
-  : (NOT)? ((subcondition) | (LPARA condition RPARA)) -> new X(@1.first_line, @1.first_column, {negation: ($1===undefined)?false:true}, [].concat($2))
+  : (NOT)? ((subcondition) | (para_condition)) -> new X(@1.first_line, @1.first_column, {negation: ($1===undefined)?false:true}, [].concat($2))
+  ;
+
+para_condition
+  : LPARA condition RPARA -> $2
   ;
 
 subcondition

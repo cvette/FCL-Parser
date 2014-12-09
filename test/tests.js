@@ -9,7 +9,7 @@ describe('Valid Data', function () {
 
     before(function (done) {
         data = fs.readFileSync('./test/data/valid/test1.fcl', "utf8");
-        json = fs.readFileSync('');
+        json = fs.readFileSync('./test/data/valid/test1.json', "utf8");
         done();
     });
 
@@ -17,8 +17,11 @@ describe('Valid Data', function () {
 
         var parse = function () {
             res = parser.parse(data);
+            res = JSON.stringify(res);
         };
 
         parse.should.not.throw(Error);
+
+        res.should.equal(json);
     });
 });

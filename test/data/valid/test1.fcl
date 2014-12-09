@@ -1,0 +1,176 @@
+FUNCTION_BLOCK test
+    VAR_INPUT
+        varIn1 : REAL := 5.4;
+        varIn2 : INT := 5;
+        varIn3 : INT;
+        varIn4 : INT;
+    END_VAR
+
+    VAR_OUTPUT
+        varOut1 : REAL := 5.2;
+        varOut2 : INT := 2;
+        varOut3 : REAL := -5.2;
+        varOut4 : INT := -2;
+        varOut5 : REAL := 5.2E3;
+        varOut7 : REAL := 5.2E-3;
+        varOut9 : REAL := -5.2E-3;
+        varOut10 : REAL := -5.2E3;
+        varOut11 : REAL := 3454.2345645;
+        varOut12 : INT := 5545665;
+    END_VAR
+
+    FUZZIFY varIn1
+        TERM term1 := varIn1;
+        TERM term2 := (varIn1, 0) (4,1) (6,1) (9,0);
+        TERM term3 := (6, 0) (9, 1);
+    END_FUZZIFY
+
+    FUZZIFY varIn2
+        TERM term4 := (0, 1) (1, 1) (3,0) ;
+        TERM term5 := (7,0) (9,1);
+    END_FUZZIFY
+
+    DEFUZZIFY varOut1
+        TERM term6 := (0,0) (5,1) (10,0);
+        TERM term7 := (10,0) (15,1) (20,0);
+        TERM term8 := (20,0) (25,1) (30,0);
+        METHOD : COG;
+        DEFAULT := 0;
+    END_DEFUZZIFY
+
+    DEFUZZIFY varOut2
+        TERM term9 := (0,0) (5,1) (10,0);
+        TERM term10 := (10,0) (15,1) (20,0);
+        TERM term11 := (20,0) (25,1) (30,0);
+        METHOD : COGS;
+        DEFAULT := 1.5;
+    END_DEFUZZIFY
+
+    DEFUZZIFY varOut3
+        TERM term12 := (0,0) (5,1) (10,0);
+        TERM term13 := (10,0) (15,1) (20,0);
+        TERM term14 := (20,0) (25,1) (30,0);
+        METHOD : COA;
+        DEFAULT := 1.5E2;
+    END_DEFUZZIFY
+
+    DEFUZZIFY varOut4
+        TERM term15 := (0,0) (5,1) (10,0);
+        TERM term16 := (10,0) (15,1) (20,0);
+        TERM term17 := (20,0) (25,1) (30,0);
+        METHOD : LM;
+        DEFAULT := 1.5E-2;
+    END_DEFUZZIFY
+
+    DEFUZZIFY varOut5
+        TERM term18 := (0,0) (5,1) (10,0);
+        TERM term19 := (10,0) (15,1) (20,0);
+        TERM term20 := (20,0) (25,1) (30,0);
+        METHOD : RM;
+        DEFAULT := 1.5E-2;
+    END_DEFUZZIFY
+
+    RULEBLOCK no2
+            OR : ASUM
+            AND : MIN;
+            ACT : MIN;
+            ACCU : BSUM;
+
+            RULE 1 : IF NOT (varIn1 IS term1) OR varIn2 IS term4
+                        THEN varOut1 IS term6 WITH varIn2;
+
+            RULE 2 : IF varIn2 THEN varOut2 IS term9;
+
+            RULE 3 : IF varIn2 IS term4 AND varIn2 IS term4
+                        THEN varOut3 IS term12;
+        END_RULEBLOCK
+
+END_FUNCTION_BLOCK
+
+FUNCTION_BLOCK test2
+    VAR_INPUT
+        varIn1 : REAL := 5.4;
+        varIn2 : INT := 5;
+        varIn3 : INT;
+    END_VAR
+
+    VAR_OUTPUT
+        varOut1 : REAL := 5.2;
+        varOut2 : INT := 2;
+        varOut3 : REAL := -5.2;
+        varOut4 : INT := -2;
+        varOut5 : REAL := 5.2E3;
+        varOut7 : REAL := 5.2E-3;
+        varOut9 : REAL := -5.2E-3;
+        varOut10 : REAL := -5.2E3;
+        varOut11 : REAL := 3454.2345645;
+        varOut12 : INT := 5545665;
+    END_VAR
+
+    FUZZIFY varIn1
+        TERM term1 := varIn1;
+        TERM term2 := (varIn1, 0) (4,1) (6,1) (9,0);
+        TERM term3 := (6, 0) (9, 1);
+    END_FUZZIFY
+
+    FUZZIFY varIn2
+        TERM term4 := (0, 1) (1, 1) (3,0) ;
+        TERM term5 := (7,0) (9,1);
+    END_FUZZIFY
+
+    DEFUZZIFY varOut1
+        TERM term6 := (0,0) (5,1) (10,0);
+        TERM term7 := (10,0) (15,1) (20,0);
+        TERM term8 := (20,0) (25,1) (30,0);
+        METHOD : COG;
+        DEFAULT := 0;
+    END_DEFUZZIFY
+
+    DEFUZZIFY varOut2
+        TERM term9 := (0,0) (5,1) (10,0);
+        TERM term10 := (10,0) (15,1) (20,0);
+        TERM term11 := (20,0) (25,1) (30,0);
+        METHOD : COGS;
+        DEFAULT := 1.5;
+    END_DEFUZZIFY
+
+    DEFUZZIFY varOut3
+        TERM term12 := (0,0) (5,1) (10,0);
+        TERM term13 := (10,0) (15,1) (20,0);
+        TERM term14 := (20,0) (25,1) (30,0);
+        METHOD : COA;
+        DEFAULT := 1.5E2;
+    END_DEFUZZIFY
+
+    DEFUZZIFY varOut4
+        TERM term15 := (0,0) (5,1) (10,0);
+        TERM term16 := (10,0) (15,1) (20,0);
+        TERM term17 := (20,0) (25,1) (30,0);
+        METHOD : LM;
+        DEFAULT := 1.5E-2;
+    END_DEFUZZIFY
+
+    DEFUZZIFY varOut5
+        TERM term18 := (0,0) (5,1) (10,0);
+        TERM term19 := (10,0) (15,1) (20,0);
+        TERM term20 := (20,0) (25,1) (30,0);
+        METHOD : RM;
+        DEFAULT := 1.5E-2;
+    END_DEFUZZIFY
+
+    RULEBLOCK no2
+            OR : ASUM
+            AND : PROD;
+            ACT : MIN;
+            ACCU : BSUM;
+
+            RULE 1 : IF NOT (varIn1 IS term1) OR varIn2 IS term4
+                        THEN varOut1 IS term6 WITH varIn2;
+
+            RULE 2 : IF varIn2 THEN varOut2 IS term9;
+
+            RULE 3 : IF varIn2 IS term4 AND varIn2 IS term4
+                        THEN varOut3 IS term12;
+        END_RULEBLOCK
+
+END_FUNCTION_BLOCK
